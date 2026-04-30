@@ -1,0 +1,437 @@
+<!doctype html><html lang="ru" dir="ltr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#F7F3EA"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Утро"><link rel="manifest" href="./manifest.json"><link rel="apple-touch-icon" href="./apple-touch-icon.png"><title>Morning Timer</title>
+<style>
+:root{--bg:#F7F3EA;--ink:#233044;--muted:rgba(35,48,68,.62);--morning:#BDE4FF;--dress:#CFF3DA;--breakfast:#FFE2B8;--ready:#DED3FF;--warning:#FFE66D;--finished:#E9EDF2;--good:#CFF3DA;--late:#FFD0D8;--pro:#DED3FF;--safe-top:env(safe-area-inset-top,0px);--safe-right:env(safe-area-inset-right,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;user-select:none}
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{position:fixed;inset:0;overscroll-behavior:none}
+.app{width:100vw;height:100vh;height:100dvh;padding:calc(8px + var(--safe-top)) calc(8px + var(--safe-right)) calc(8px + var(--safe-bottom)) calc(8px + var(--safe-left));display:grid;grid-template-rows:repeat(4,minmax(0,1fr)) 48px;grid-template-columns:minmax(0,1fr) 58px;gap:8px;background:radial-gradient(circle at 16% 6%,rgba(255,255,255,.8),transparent 32%),radial-gradient(circle at 82% 92%,rgba(167,216,255,.25),transparent 36%),var(--bg)}
+.stage{grid-column:1/span 2;position:relative;overflow:hidden;border:0;border-radius:26px;background:var(--stage-bg);color:var(--ink);box-shadow:0 8px 22px rgba(35,48,68,.10);touch-action:manipulation}
+.stage[data-stage="0"]{--stage-bg:var(--morning)}.stage[data-stage="1"]{--stage-bg:var(--dress)}.stage[data-stage="2"]{--stage-bg:var(--breakfast)}.stage[data-stage="3"]{--stage-bg:var(--ready)}
+.stage.warning{--stage-bg:var(--warning)}.stage.finished{--stage-bg:var(--finished)}.stage.active{box-shadow:0 0 0 4px rgba(35,48,68,.10),0 8px 22px rgba(35,48,68,.14)}.stage.completed-stage:before{background:linear-gradient(135deg,rgba(255,255,255,.66),rgba(198,255,221,.22)),var(--stage-bg)}
+.stage:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.56),rgba(255,255,255,.08)),var(--stage-bg);z-index:0}.stage:after{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--progress,100%);background:linear-gradient(90deg,rgba(255,255,255,.22),rgba(255,255,255,.02));z-index:1;transition:width .24s linear}
+.category{position:absolute;left:50%;top:50%;width:min(34vw,138px);height:min(34vw,138px);border-radius:34px;display:grid;place-items:center;transform:translate(-50%,-50%) rotate(-4deg);font-size:min(21vw,86px);background:rgba(255,255,255,.20);opacity:.28;z-index:2;pointer-events:none}
+.title{position:absolute;left:18px;top:16px;right:124px;z-index:5;font-weight:950;font-size:clamp(24px,7.4vw,32px);line-height:.92;letter-spacing:-.045em;text-align:left}
+.timer{position:absolute;left:18px;bottom:10px;right:124px;z-index:5;font-weight:1000;font-size:clamp(50px,15.6vw,70px);line-height:.84;letter-spacing:-.075em;font-variant-numeric:tabular-nums;text-align:left;white-space:nowrap}
+.icons{position:absolute;right:10px;top:50%;width:106px;transform:translateY(-50%);z-index:6;display:flex;flex-direction:column;gap:4px;pointer-events:auto}
+.icon-item{display:grid;grid-template-columns:minmax(0,1fr) 34px;align-items:center;column-gap:5px;min-height:36px;border-radius:16px;cursor:pointer;pointer-events:auto}
+.icon-label{text-align:right;font-size:clamp(10px,2.8vw,12px);line-height:1;font-weight:950;letter-spacing:-.02em;color:rgba(35,48,68,.68);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon{width:34px;height:34px;border-radius:12px;background:rgba(255,255,255,.74);box-shadow:inset 0 0 0 1px rgba(255,255,255,.68),0 5px 14px rgba(35,48,68,.08);display:grid;place-items:center;font-size:19px;position:relative}
+.icon-item.checked .icon{background:#A7F3C5!important}.icon-item.checked .icon:after{content:"✓";position:absolute;font-size:11px;font-weight:1000;color:#14532D;background:rgba(255,255,255,.9);width:16px;height:16px;border-radius:50%;display:grid;place-items:center;right:-4px;top:-4px}
+.saved-badge{position:absolute;left:18px;top:50%;transform:translateY(-50%);z-index:7;min-width:84px;min-height:32px;padding:7px 11px;border-radius:18px;background:rgba(167,243,197,.94);color:#14532D;font-size:clamp(13px,3.8vw,17px);font-weight:1000;letter-spacing:-.03em;display:none;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(20,83,45,.16)}.saved-badge.visible{display:flex;animation:savedPop .42s ease-out both}@keyframes savedPop{0%{transform:translateY(-50%) scale(.78);opacity:0}70%{transform:translateY(-50%) scale(1.06);opacity:1}100%{transform:translateY(-50%) scale(1);opacity:1}}
+.savings-total{position:fixed;left:calc(14px + var(--safe-left));right:calc(14px + var(--safe-right));top:calc(8px + var(--safe-top));z-index:30;display:none;justify-content:center;pointer-events:none}.savings-total.visible{display:flex}.savings-pill{background:rgba(255,255,255,.92);border-radius:999px;padding:7px 12px;font-size:14px;font-weight:1000;color:#14532D;box-shadow:0 8px 20px rgba(35,48,68,.12)}
+.reset,.settings-entry{height:100%;border:0;border-radius:22px;background:rgba(255,255,255,.90);color:rgba(35,48,68,.78);box-shadow:0 8px 20px rgba(35,48,68,.13);font-weight:950;cursor:pointer;touch-action:manipulation}.reset{grid-column:1;font-size:clamp(14px,4vw,18px)}.settings-entry{grid-column:2;font-size:26px}
+.screen{position:fixed;inset:0;z-index:50;padding:calc(14px + var(--safe-top)) calc(14px + var(--safe-right)) calc(14px + var(--safe-bottom)) calc(14px + var(--safe-left));background:var(--bg);display:none}.screen.visible{display:flex}.panel{width:100%;height:100%;border-radius:34px;background:rgba(255,255,255,.84);box-shadow:0 14px 36px rgba(35,48,68,.14);display:flex;flex-direction:column;padding:18px;overflow:hidden}.panel-scroll{overflow:auto}.screen-header{display:flex;justify-content:space-between;gap:10px}.screen-title{font-weight:1000;font-size:clamp(31px,9.2vw,50px);line-height:.95;letter-spacing:-.055em;margin:4px 0 8px}.screen-subtitle{font-weight:820;font-size:clamp(14px,4.2vw,18px);line-height:1.16;color:var(--muted);margin-bottom:14px}.close-button{border:0;border-radius:18px;width:46px;height:46px;background:#EEF2F6;color:var(--ink);font-size:24px;font-weight:1000;flex:0 0 auto}
+.exit-card,.result-card{justify-content:center;text-align:center}.exit-title,.result-title{font-weight:1000;font-size:clamp(34px,10vw,54px);line-height:.95;letter-spacing:-.055em;margin-bottom:12px}.exit-subtitle,.result-subtitle{font-weight:850;font-size:clamp(16px,4.8vw,22px);line-height:1.15;color:var(--muted);margin-bottom:22px}.exit-time,.result-time{font-weight:1000;font-size:clamp(58px,18vw,92px);line-height:.86;letter-spacing:-.075em;font-variant-numeric:tabular-nums;margin-bottom:22px}.choice-grid,.result-actions{display:grid;gap:12px}.choice-button{border:0;border-radius:28px;min-height:72px;font-weight:1000;font-size:clamp(22px,6.4vw,32px);letter-spacing:-.04em;color:var(--ink);box-shadow:0 8px 22px rgba(35,48,68,.12)}.choice-exit{background:var(--good)}.choice-back{background:#E9EDF2}.choice-pro{background:var(--pro)}
+.promo-card,.install-card,.editor-card{background:linear-gradient(135deg,#DED3FF,#F4EDFF);border-radius:26px;padding:14px;margin:6px 0 12px;box-shadow:0 8px 20px rgba(35,48,68,.10)}.install-card{background:linear-gradient(135deg,#BDE4FF,#EAF7FF)}.editor-card{background:linear-gradient(135deg,#CFF3DA,#F0FFF4)}.promo-title,.install-title,.editor-title{font-weight:1000;font-size:22px;letter-spacing:-.04em;margin-bottom:5px}.promo-text,.install-text,.editor-text{font-size:14px;font-weight:780;color:var(--muted);line-height:1.18;margin-bottom:10px}.promo-button,.install-button,.editor-button{border:0;border-radius:18px;min-height:42px;padding:0 14px;background:#fff;color:var(--ink);font-weight:950;font-size:15px}.install-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.section-label{font-size:12px;font-weight:1000;color:rgba(35,48,68,.48);text-transform:uppercase;letter-spacing:.05em;margin:14px 4px 6px}.language-row{display:flex;gap:8px;margin-bottom:8px}.chip{border:0;border-radius:18px;min-height:42px;padding:0 14px;background:#EEF2F6;color:var(--ink);font-weight:1000;font-size:15px}.chip.active{background:#BDE4FF}
+.list{display:grid;gap:8px}.list-row{border:0;border-radius:22px;min-height:58px;padding:10px 12px;background:#F2F5F8;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;color:var(--ink);text-align:left}.row-title{font-size:17px;font-weight:950;line-height:1;letter-spacing:-.03em}.row-subtitle{font-size:12px;font-weight:760;color:var(--muted);margin-top:4px;line-height:1.1}.lock{font-size:15px;font-weight:1000;background:#fff;padding:6px 8px;border-radius:14px}
+.editor-stage{background:#F2F5F8;border-radius:24px;padding:12px;margin-bottom:10px}.editor-stage-title{font-weight:1000;font-size:18px;margin-bottom:8px}.task-edit-row{display:grid;grid-template-columns:48px 1fr auto;gap:10px;align-items:center;background:#fff;border-radius:18px;padding:8px;margin-bottom:7px}.task-edit-emoji{width:42px;height:42px;border-radius:14px;background:#F7F3EA;display:grid;place-items:center;font-size:24px}.task-edit-label{font-weight:950;font-size:15px}.task-edit-button{border:0;border-radius:14px;background:#E9EDF2;padding:8px 10px;font-weight:950;color:var(--ink)}.emoji-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.emoji-choice{border:0;border-radius:18px;background:#F2F5F8;min-height:52px;font-size:27px}.emoji-choice.active{background:#A7F3C5;box-shadow:inset 0 0 0 2px rgba(20,83,45,.18)}
+.modal-shade{position:fixed;inset:0;z-index:80;background:rgba(35,48,68,.25);display:none;align-items:center;justify-content:center;padding:20px}.modal-shade.visible{display:flex}.modal{width:min(420px,100%);background:#fff;border-radius:30px;padding:18px;box-shadow:0 18px 44px rgba(35,48,68,.22);text-align:center}.modal-title{font-weight:1000;font-size:28px;letter-spacing:-.05em;line-height:.98;margin-bottom:8px}.modal-text{font-weight:780;color:var(--muted);line-height:1.15;margin-bottom:14px}.modal-actions{display:grid;gap:9px}
+html[dir="rtl"] .title,html[dir="rtl"] .timer{text-align:right;left:116px;right:18px}html[dir="rtl"] .icons{left:10px;right:auto}html[dir="rtl"] .icon-item{grid-template-columns:34px minmax(0,1fr)}html[dir="rtl"] .icon-item .icon{order:1}html[dir="rtl"] .icon-item .icon-label{order:2;text-align:right}html[dir="rtl"] .saved-badge{right:18px;left:auto}html[dir="rtl"] .list-row,html[dir="rtl"] .row-title,html[dir="rtl"] .row-subtitle{text-align:right}
+@media(max-height:700px){.app{padding:calc(6px + var(--safe-top)) calc(6px + var(--safe-right)) calc(6px + var(--safe-bottom)) calc(6px + var(--safe-left));grid-template-rows:repeat(4,minmax(0,1fr)) 42px;grid-template-columns:minmax(0,1fr) 52px;gap:6px}.stage{border-radius:22px}.title{left:16px;top:13px;right:110px;font-size:clamp(21px,6.4vw,28px)}.timer{left:16px;bottom:8px;right:110px;font-size:clamp(42px,13vw,58px)}.icons{right:8px;width:98px;gap:3px}.icon-item{grid-template-columns:minmax(0,1fr) 31px;column-gap:4px;min-height:33px}.icon{width:31px;height:31px;border-radius:11px;font-size:17px}.icon-label{font-size:clamp(10px,2.8vw,12px)}.category{width:min(30vw,108px);height:min(30vw,108px);border-radius:28px;font-size:min(19vw,68px);opacity:.22}.panel{border-radius:28px;padding:14px}.choice-button{min-height:62px}html[dir="rtl"] .title{left:106px;right:16px}html[dir="rtl"] .timer{left:106px;right:16px}html[dir="rtl"] .icons{left:8px;right:auto}html[dir="rtl"] .icon-item{grid-template-columns:31px minmax(0,1fr)}}
+@media(min-width:700px){.app{max-width:520px;margin:0 auto}.screen{max-width:560px;left:50%;transform:translateX(-50%)}}
+
+/* v2.4-a.8 template fit */
+.editor-stage .language-row{flex-wrap:wrap}.editor-stage .chip{min-height:38px;padding:0 11px;font-size:14px}.emoji-choice{padding:3px;line-height:1.05}
+
+/* v2.4-a.8 picker notes */
+.emoji-grid .chip:disabled{cursor:not-allowed}.emoji-grid>div{box-shadow:0 4px 12px rgba(35,48,68,.06)}
+
+/* v2.4-a.8 exit-after-all-tasks + late bank */
+.exit-hero{display:flex;justify-content:center;margin:0 0 16px}
+.exit-child{width:132px;height:132px;border-radius:42px;background:linear-gradient(135deg,#BDE4FF,#CFF3DA);display:grid;place-items:center;position:relative;box-shadow:0 12px 26px rgba(35,48,68,.14);border:4px solid rgba(255,255,255,.72)}
+.exit-face{font-size:66px;line-height:1;filter:drop-shadow(0 4px 8px rgba(35,48,68,.10))}
+.exit-bag{position:absolute;right:-13px;bottom:8px;width:56px;height:56px;border-radius:20px;background:rgba(255,255,255,.9);display:grid;place-items:center;font-size:33px;box-shadow:0 8px 18px rgba(35,48,68,.14)}
+.savings-pill.late{color:#8A1C2B;background:rgba(255,208,216,.96)}
+.savings-pill.empty{color:rgba(35,48,68,.72);background:rgba(255,255,255,.92)}
+@media(max-height:700px){.exit-child{width:108px;height:108px;border-radius:34px}.exit-face{font-size:54px}.exit-bag{width:46px;height:46px;border-radius:16px;font-size:27px}.exit-hero{margin-bottom:10px}}
+
+
+/* v2.4-a.8 Pro finalization */
+.list-row{grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important}
+.list-row>span:first-child{display:block!important;min-width:0!important}
+.row-title{display:block!important;line-height:1.08!important;margin-bottom:5px!important;white-space:normal!important}
+.row-subtitle{display:block!important;line-height:1.18!important;white-space:normal!important}
+.lock{white-space:nowrap!important}
+body.pro-enabled .lock{background:#A7F3C5!important;color:#14532D!important}
+body.pro-enabled .pro-locked{background:#EEFDF3!important}
+.pro-status{background:#F2F5F8;border-radius:22px;padding:12px;margin:8px 0 10px;font-size:14px;font-weight:900;color:rgba(35,48,68,.70);line-height:1.2}
+.pro-status.enabled{background:#DDFBE8;color:#14532D}
+.pro-benefit-list{display:grid;gap:8px;margin-top:10px}
+.pro-benefit{background:#F2F5F8;border-radius:18px;padding:10px 12px;font-size:14px;font-weight:850;line-height:1.18}
+body.pro-enabled .pro-benefit{background:#EEFDF3}
+
+</style>
+
+</head><body>
+<main class="app" id="mainApp" aria-label="Morning Timer">
+  <button class="stage" type="button" data-stage="0">
+    <div class="category" aria-hidden="true">🌞</div><div class="title" data-i="stage0">Начальные<br>ритуалы</div><div class="timer" data-timer>15:00</div><div class="saved-badge" data-saved-badge></div>
+    <div class="icons">
+      <span class="icon-item"><span class="icon-label" data-i="teeth">зубы</span><span class="icon">🪥</span></span>
+      <span class="icon-item"><span class="icon-label" data-i="face">лицо</span><span class="icon">💧</span></span>
+      <span class="icon-item"><span class="icon-label" data-i="toilet">туалет</span><span class="icon">🚽</span></span>
+    </div>
+  </button>
+  <button class="stage" type="button" data-stage="1">
+    <div class="category" aria-hidden="true">👕</div><div class="title" data-i="stage1">Одевание</div><div class="timer" data-timer>15:00</div><div class="saved-badge" data-saved-badge></div>
+    <div class="icons">
+      <span class="icon-item"><span class="icon-label" data-i="shirt">майка</span><span class="icon">👕</span></span>
+      <span class="icon-item"><span class="icon-label" data-i="pants">штаны</span><span class="icon">🩳</span></span>
+      <span class="icon-item"><span class="icon-label" data-i="socks">носки</span><span class="icon">🧦</span></span>
+    </div>
+  </button>
+  <button class="stage" type="button" data-stage="2">
+    <div class="category" aria-hidden="true">🥣</div><div class="title" data-i="stage2">Завтрак</div><div class="timer" data-timer>15:00</div><div class="saved-badge" data-saved-badge></div>
+    <div class="icons">
+      <span class="icon-item"><span class="icon-label" data-i="eat">поесть</span><span class="icon">🍽️</span></span>
+      <span class="icon-item"><span class="icon-label" data-i="rinse">замыть</span><span class="icon">🚰</span></span>
+      <span class="icon-item"><span class="icon-label" data-i="thanks">спасибо</span><span class="icon">🙏</span></span>
+    </div>
+  </button>
+  <button class="stage" type="button" data-stage="3">
+    <div class="category" aria-hidden="true">🎒</div><div class="title" data-i="stage3">Подготовка<br>к выходу</div><div class="timer" data-timer>15:00</div><div class="saved-badge" data-saved-badge></div>
+    <div class="icons">
+      <span class="icon-item"><span class="icon-label" data-i="hair">волосы</span><span class="icon">💇</span></span>
+      <span class="icon-item"><span class="icon-label" data-i="lunch">ланч</span><span class="icon">🍱</span></span>
+      <span class="icon-item"><span class="icon-label" data-i="shoes">обувь</span><span class="icon">👟</span></span>
+    </div>
+  </button>
+  <button class="reset" id="resetButton" type="button">↺ Сбросить</button>
+  <button class="settings-entry" id="settingsButton" type="button" aria-label="Settings">⚙</button>
+</main>
+<div class="savings-total" id="savingsTotal"><div class="savings-pill" id="savingsPill">🏆 +00:00</div></div>
+
+<section class="screen" id="exitScreen"><div class="panel exit-card"><div class="exit-hero" aria-hidden="true"><div class="exit-child"><div class="exit-face">😊</div><div class="exit-bag">🎒</div></div></div><div class="exit-title" data-i="exitTitle">Готовы выходить?</div><div class="exit-subtitle" id="exitSubtitle">Можно выйти сейчас или вернуться к таймерам.</div><div class="exit-time" id="exitLiveTime">00:00</div><div class="choice-grid"><button class="choice-button choice-exit" id="leaveButton" type="button" data-i="leave">Выхожу</button><button class="choice-button choice-back" id="backButton" type="button" data-i="back">Вернуться</button></div><div class="small-note" data-i="exitNote">Если вернуться, текущий таймер продолжит идти.</div></div></section>
+<section class="screen" id="resultScreen"><div class="panel result-card" id="resultCard"><div class="result-title" id="resultTitle">Готово</div><div class="result-subtitle" id="resultSubtitle">Итог утра</div><div class="result-time" id="resultTime">00:00</div><div class="result-actions"><button class="choice-button choice-pro" id="resultProButton" type="button" data-i="configurePro">Настроить Pro</button><button class="choice-button choice-back" id="resultBackButton" type="button" data-i="main">На главный экран</button></div></div></section>
+
+<section class="screen" id="settingsScreen"><div class="panel"><div class="screen-header"><div><div class="screen-title" data-i="settings">Настройки</div><div class="screen-subtitle" data-i="settingsSub">Родительский раздел. Сейчас это демо Free / Pro-модели.</div></div><button class="close-button" id="settingsClose" type="button">×</button></div><div class="panel-scroll">
+  <div class="editor-card"><div class="editor-title" data-i="taskEditorTitle">Редактор задач</div><div class="editor-text" data-i="taskEditorText">Выберите смайлики для задач ребёнка.</div><button class="editor-button" id="taskEditorButton" type="button" data-i="taskEditorOpen">Настроить задачи</button></div>
+  <div class="promo-card"><div class="promo-title" data-i="proName">Morning Timer Pro</div><div class="promo-text" data-i="promo">Настройте этапы, время и списки дел под своего ребёнка.</div><button class="promo-button" id="promoButton" type="button" data-i="learn">Узнать больше</button></div>
+  <div class="install-card"><div class="install-title" data-i="installTitle">Установить на телефон</div><div class="install-text" data-i="installText">Добавьте Morning Timer на экран Домой, чтобы открывать как приложение.</div><div class="install-actions"><button class="install-button" id="installHelpButton" type="button" data-i="installHelp">Как установить</button><button class="install-button" id="shareButton" type="button" data-i="shareButton">Поделиться</button></div></div>
+  <div class="section-label" data-i="service">Сервис</div><div class="small-note" data-i="serviceNote">Код <b>684100</b> включает/выключает ускоренную проверку.</div>
+  <div class="section-label" data-i="language">Язык</div><div class="language-row"><button class="chip active" data-lang="ru" type="button">RU</button><button class="chip" data-lang="en" type="button">EN</button><button class="chip" data-lang="he" type="button">HE</button></div>
+  <div class="section-label" id="proSettingsAnchor" data-i="proSettings">Pro-настройки</div>
+  <div class="pro-status" id="proStatus">Pro выключен. Код 684168 включает/выключает Pro-режим.</div>
+  <div class="list">
+    <button class="list-row pro-locked" data-feature="Профили детей" type="button"><span><span class="row-title" data-i="proProfiles">Профили детей</span><span class="row-subtitle" data-i="proProfilesSub">Отдельные настройки, сценарии и прогресс для каждого ребёнка</span></span><span class="lock">🔒 Pro</span></button>
+    <button class="list-row pro-locked" data-feature="Рубрикатор задач и иконок" type="button"><span><span class="row-title" data-i="proRubricatorFull">Рубрикатор задач и иконок</span><span class="row-subtitle" data-i="proRubricatorFullSub">Фильтр смайликов по гигиене, одежде, еде, выходу и другим рубрикам</span></span><span class="lock">🔒 Pro</span></button>
+    <button class="list-row pro-locked" data-feature="Количество этапов" type="button"><span><span class="row-title" data-i="proStageCount">Количество этапов</span><span class="row-subtitle" data-i="proStageCountSub">Настройка 2–8 этапов вместо фиксированных четырёх</span></span><span class="lock">🔒 Pro</span></button>
+    <button class="list-row pro-locked" data-feature="Длительность этапов" type="button"><span><span class="row-title" data-i="proDuration">Длительность этапов</span><span class="row-subtitle" data-i="proDurationSub">Своя длительность для каждого этапа и общий утренний лимит</span></span><span class="lock">🔒 Pro</span></button>
+    <button class="list-row pro-locked" data-feature="Количество задач" type="button"><span><span class="row-title" data-i="proTaskCount">Количество задач</span><span class="row-subtitle" data-i="proTaskCountSub">Настройка количества задач внутри каждого этапа</span></span><span class="lock">🔒 Pro</span></button>
+    <button class="list-row pro-locked" data-feature="Шаблоны сценариев" type="button"><span><span class="row-title" data-i="proTemplatesFull">Шаблоны сценариев</span><span class="row-subtitle" data-i="proTemplatesFullSub">Школа, сад, выходной, быстрый режим и свои наборы</span></span><span class="lock">🔒 Pro</span></button>
+    <button class="list-row pro-locked" data-feature="Отчёты для родителя" type="button"><span><span class="row-title" data-i="proReports">Отчёты для родителя</span><span class="row-subtitle" data-i="proReportsSub">Сколько времени заняло утро, где были задержки и сколько накоплено</span></span><span class="lock">🔒 Pro</span></button>
+  </div>
+</div></div></section>
+
+<section class="screen" id="taskEditorScreen"><div class="panel"><div class="screen-header"><div><div class="screen-title" data-i="taskEditorTitle">Редактор задач</div><div class="screen-subtitle" data-i="taskEditorText">Выберите смайлики для задач ребёнка.</div></div><button class="close-button" id="taskEditorClose" type="button">×</button></div><div class="panel-scroll" id="taskEditorList"></div></div></section>
+<section class="screen" id="emojiPickerScreen"><div class="panel"><div class="screen-header"><div><div class="screen-title" data-i="emojiPickerTitle">Выбор иконки</div><div class="screen-subtitle" id="emojiPickerSubtitle">Выберите смайлик для задачи</div></div><button class="close-button" id="emojiPickerClose" type="button">×</button></div><div class="panel-scroll"><div class="emoji-grid" id="emojiGrid"></div></div></div></section>
+<section class="screen" id="proScreen"><div class="panel"><div class="screen-header"><div><div class="screen-title" data-i="proScreen">Morning Timer Pro</div><div class="screen-subtitle" data-i="proScreenSub">Будущая платная версия.</div></div><button class="close-button" id="proClose" type="button">×</button></div><div class="panel-scroll"><div class="pro-list"><div class="pro-item" data-i="proProfiles">Профили детей</div><div class="pro-item" data-i="proRubricatorFull">Рубрикатор задач и иконок</div><div class="pro-item" data-i="proStageCount">Количество этапов</div><div class="pro-item" data-i="proDuration">Длительность этапов</div><div class="pro-item" data-i="proTaskCount">Количество задач</div><div class="pro-item" data-i="proTemplatesFull">Шаблоны сценариев</div><div class="pro-item" data-i="proReports">Отчёты для родителя</div></div><button class="choice-button choice-pro" id="interestButton" type="button" data-i="wantPro">Хочу Pro</button><div class="small-note" data-i="proNote">Оплата не подключена.</div></div></div></section>
+<section class="screen" id="installScreen"><div class="panel"><div class="screen-header"><div><div class="screen-title" data-i="installScreenTitle">Установка</div><div class="screen-subtitle" data-i="installScreenSubtitle">Откройте ссылку в Safari и добавьте на экран Домой.</div></div><button class="close-button" id="installClose" type="button">×</button></div><div class="panel-scroll"><div class="pro-list"><div class="pro-item" data-i="installStep1">1. Откройте ссылку в Safari.</div><div class="pro-item" data-i="installStep2">2. Нажмите «Поделиться».</div><div class="pro-item" data-i="installStep3">3. Выберите «На экран Домой».</div><div class="pro-item" data-i="installStep4">4. Нажмите «Добавить».</div></div></div></div></section>
+<div class="modal-shade" id="lockModal"><div class="modal"><div class="modal-title" data-i="locked">Доступно в Pro</div><div class="modal-text" id="lockText">Эта функция доступна в Morning Timer Pro.</div><div class="modal-actions"><button class="choice-button choice-pro" id="lockLearn" type="button" data-i="learn">Узнать больше</button><button class="choice-button choice-back" id="lockLater" type="button" data-i="later">Позже</button></div></div></div>
+
+<script>
+(function(){ "use strict";
+var DEFAULT_DURATION=900,DEFAULT_TOTAL=3600,DEFAULT_WARNING=300,TURBO_DURATION=9,TURBO_TOTAL=36,TURBO_WARNING=5;
+var STORAGE_KEY="funbots_morning_timer_v24a8_flat";
+var config={turbo:false,duration:DEFAULT_DURATION,total:DEFAULT_TOTAL,warning:DEFAULT_WARNING};
+
+var buttons=[].slice.call(document.querySelectorAll(".stage")),taskItems=[].slice.call(document.querySelectorAll(".icon-item"));
+var resetButton=document.getElementById("resetButton"),settingsButton=document.getElementById("settingsButton"),exitScreen=document.getElementById("exitScreen"),resultScreen=document.getElementById("resultScreen"),settingsScreen=document.getElementById("settingsScreen"),proScreen=document.getElementById("proScreen"),installScreen=document.getElementById("installScreen"),lockModal=document.getElementById("lockModal"),taskEditorScreen=document.getElementById("taskEditorScreen"),emojiPickerScreen=document.getElementById("emojiPickerScreen");
+var exitSubtitle=document.getElementById("exitSubtitle"),exitLiveTime=document.getElementById("exitLiveTime"),leaveButton=document.getElementById("leaveButton"),backButton=document.getElementById("backButton"),resultCard=document.getElementById("resultCard"),resultTitle=document.getElementById("resultTitle"),resultSubtitle=document.getElementById("resultSubtitle"),resultTime=document.getElementById("resultTime"),resultBackButton=document.getElementById("resultBackButton"),resultProButton=document.getElementById("resultProButton");
+var settingsClose=document.getElementById("settingsClose"),proClose=document.getElementById("proClose"),promoButton=document.getElementById("promoButton"),lockText=document.getElementById("lockText"),lockLearn=document.getElementById("lockLearn"),lockLater=document.getElementById("lockLater"),interestButton=document.getElementById("interestButton"),installHelpButton=document.getElementById("installHelpButton"),installClose=document.getElementById("installClose"),shareButton=document.getElementById("shareButton");
+var taskEditorButton=document.getElementById("taskEditorButton"),taskEditorClose=document.getElementById("taskEditorClose"),taskEditorList=document.getElementById("taskEditorList"),emojiPickerClose=document.getElementById("emojiPickerClose"),emojiGrid=document.getElementById("emojiGrid"),emojiPickerSubtitle=document.getElementById("emojiPickerSubtitle");
+var savingsTotal=document.getElementById("savingsTotal"),savingsPill=document.getElementById("savingsPill"),langButtons=[].slice.call(document.querySelectorAll("[data-lang]")),lockedButtons=[].slice.call(document.querySelectorAll(".pro-locked"));
+
+var stageTitles={
+  ru:["Начальные ритуалы","Одевание","Завтрак","Подготовка к выходу"],
+  en:["Morning rituals","Dressing","Breakfast","Ready to go"],
+  he:["טקסי בוקר","מתלבשים","ארוחת בוקר","מוכנים ליציאה"]
+};
+
+var defaultTasks=[
+  {stage:0,key:"teeth",emoji:"🪥"},{stage:0,key:"face",emoji:"💧"},{stage:0,key:"toilet",emoji:"🚽"},
+  {stage:1,key:"shirt",emoji:"👕"},{stage:1,key:"pants",emoji:"🩳"},{stage:1,key:"socks",emoji:"🧦"},
+  {stage:2,key:"eat",emoji:"🍽️"},{stage:2,key:"rinse",emoji:"🚰"},{stage:2,key:"thanks",emoji:"🙏"},
+  {stage:3,key:"hair",emoji:"💇"},{stage:3,key:"lunch",emoji:"🍱"},{stage:3,key:"shoes",emoji:"👟"}
+];
+
+var emojiLibrary=[
+  "🪥","🧼","🚽","🛁","💧","🪮","💇","🧴",
+  "👕","👖","🩳","🧦","👗","🧢","🧥","👟","🥾",
+  "🍽️","🥣","🍎","🍌","🥪","🥛","🚰","🙏","🍱",
+  "🎒","📚","✏️","📘","🧸","⭐","✅","🕒","🚗"
+];
+var emojiRubricsPro={
+  hygiene:["🪥","🧼","🚽","🛁","💧","🧴","🪮","💇","🧻","🧽","🫧"],
+  clothes:["👕","👖","🩳","🧦","👗","🧢","🧥","👟","🥾","🧤","🧣","👒"],
+  food:["🍽️","🥣","🍎","🍌","🥪","🥛","🚰","🙏","🍱","🥐","🍳","🧃","🥄"],
+  exit:["🎒","📚","✏️","📘","🍱","👟","🚗","🚌","🧸","🗝️","📱","☂️"],
+  universal:["⭐","✅","🕒","🏆","💪","🎯","🌞","❤️","🔔","🚀"]
+};
+
+var emojiLabels={
+  "🪥":{ru:"зубы",en:"teeth",he:"שיניים"},
+  "🧼":{ru:"мыло",en:"soap",he:"סבון"},
+  "🚽":{ru:"туалет",en:"toilet",he:"שירותים"},
+  "🛁":{ru:"душ",en:"bath",he:"אמבטיה"},
+  "💧":{ru:"лицо",en:"face",he:"פנים"},
+  "🪮":{ru:"волосы",en:"hair",he:"שיער"},
+  "💇":{ru:"волосы",en:"hair",he:"שיער"},
+  "🧴":{ru:"крем",en:"cream",he:"קרם"},
+  "👕":{ru:"майка",en:"shirt",he:"חולצה"},
+  "👖":{ru:"штаны",en:"pants",he:"מכנסיים"},
+  "🩳":{ru:"шорты",en:"shorts",he:"מכנסיים"},
+  "🧦":{ru:"носки",en:"socks",he:"גרביים"},
+  "👗":{ru:"платье",en:"dress",he:"שמלה"},
+  "🧢":{ru:"кепка",en:"cap",he:"כובע"},
+  "🧥":{ru:"куртка",en:"jacket",he:"מעיל"},
+  "👟":{ru:"обувь",en:"shoes",he:"נעליים"},
+  "🥾":{ru:"ботинки",en:"boots",he:"מגפיים"},
+  "🍽️":{ru:"поесть",en:"eat",he:"לאכול"},
+  "🥣":{ru:"каша",en:"bowl",he:"קערה"},
+  "🍎":{ru:"фрукт",en:"fruit",he:"פרי"},
+  "🍌":{ru:"банан",en:"banana",he:"בננה"},
+  "🥪":{ru:"сэндвич",en:"sandwich",he:"כריך"},
+  "🥛":{ru:"молоко",en:"milk",he:"חלב"},
+  "🚰":{ru:"замыть",en:"rinse",he:"לשטוף"},
+  "🙏":{ru:"спасибо",en:"thanks",he:"תודה"},
+  "🍱":{ru:"ланч",en:"lunch",he:"אוכל"},
+  "🎒":{ru:"рюкзак",en:"bag",he:"תיק"},
+  "📚":{ru:"книги",en:"books",he:"ספרים"},
+  "✏️":{ru:"пенал",en:"pencil",he:"עיפרון"},
+  "📘":{ru:"тетрадь",en:"notebook",he:"מחברת"},
+  "🧸":{ru:"игрушка",en:"toy",he:"צעצוע"},
+  "⭐":{ru:"звезда",en:"star",he:"כוכב"},
+  "✅":{ru:"готово",en:"done",he:"בוצע"},
+  "🕒":{ru:"время",en:"time",he:"זמן"},
+  "🚗":{ru:"машина",en:"car",he:"אוטו"}
+};
+
+var templates={
+  classic:["🪥","💧","🚽","👕","🩳","🧦","🍽️","🚰","🙏","💇","🍱","👟"],
+  school:["🪥","🚽","💧","👕","👖","🧦","🥣","🥛","🙏","🎒","📚","👟"],
+  kindergarten:["🪥","💧","🚽","👕","🩳","🧦","🥣","🍎","🙏","🧸","🍱","👟"],
+  fast:["🚽","🪥","💧","👕","🩳","👟","🥪","🥛","🙏","🎒","🍱","🚗"]
+};
+
+var text={
+ru:{stage0:"Начальные<br>ритуалы",stage1:"Одевание",stage2:"Завтрак",stage3:"Подготовка<br>к выходу",settings:"Настройки",settingsSub:"Родительский раздел. Сейчас это демо Free / Pro-модели.",taskEditorTitle:"Редактор задач",taskEditorText:"Выберите смайлики. Подпись появится автоматически.",taskEditorOpen:"Настроить задачи",emojiPickerTitle:"Выбор иконки",exitTitle:"Готовы выходить?",leave:"Выхожу",back:"Вернуться",exitNote:"Если вернуться, текущий таймер продолжит идти.",configurePro:"Настроить Pro",main:"На главный экран",proName:"Morning Timer Pro",promo:"Настройте этапы, время и списки дел под своего ребёнка.",learn:"Узнать больше",service:"Сервис",serviceNote:"Код <b>684100</b> включает/выключает ускоренную проверку.",language:"Язык",proSettings:"Pro-настройки",setStages:"Количество этапов",setStagesSub:"2–8 этапов вместо фиксированных четырёх",setDuration:"Длительность таймеров",setDurationSub:"Настроить время каждого этапа",setTodos:"Списки дел",setTodosSub:"Редактировать подписи и действия",installTitle:"Установить на телефон",installText:"Добавьте Morning Timer на экран Домой, чтобы открывать как приложение.",installHelp:"Как установить",shareButton:"Поделиться",proScreen:"Morning Timer Pro",proScreenSub:"Будущая платная версия.",pro1:"✓ Менять длительность каждого таймера",pro2:"✓ Менять общий лимит утра",pro3:"✓ Создавать свои этапы",pro4:"✓ Редактировать списки дел",wantPro:"Хочу Pro",proNote:"Оплата не подключена.",installScreenTitle:"Установка",installScreenSubtitle:"Откройте ссылку в Safari и добавьте на экран Домой.",installStep1:"1. Откройте ссылку в Safari.",installStep2:"2. Нажмите «Поделиться».",installStep3:"3. Выберите «На экран Домой».",installStep4:"4. Нажмите «Добавить».",locked:"Доступно в Pro",later:"Позже",exitAuto:"Все 60 минут закончились. Нажмите «Выхожу», когда реально вышли.",exitReady:"Можно выйти сейчас или вернуться к таймерам.",exitRemaining:"Осталось до 60 минут",exitOvertime:"Идёт лишнее время",resultSuccessTitle:"Успели!",resultSaved:"Сэкономленное время",resultLateTitle:"Опоздание",resultLate:"Лишнее время после 60 минут",servicePrompt:"Введите код",turboOn:"Сервисный режим включён: этап 9 секунд, всё утро 36 секунд.",turboOff:"Сервисный режим выключен.",interestThanks:"Спасибо! Оплата ещё не подключена.",langSaved:"Язык сохранён.",lockedText:"«{feature}» — функция Morning Timer Pro.",shareText:"Попробуйте Morning Timer — простой утренний таймер для детей.",bank:"Копилка",lateBank:"Опоздание",change:"Изменить",stageLabel:"Этап",autoLabel:"Подпись автоматически:",templates:"Шаблоны",freeEmojiLibrary:"Free: общий набор смайликов для всех этапов",proRubricator:"Pro-рубрикатор",rubricHygiene:"Гигиена",rubricClothes:"Одежда",rubricFood:"Еда",rubricExit:"Выход",rubricUniversal:"Другое",classic:"Классика",school:"Школа",kindergarten:"Сад",fast:"Быстро",resetIcons:"Сбросить иконки",proStatusOff:"Pro выключен. Код 684168 включает/выключает Pro-режим.",proStatusOn:"Pro включён. Все Pro-функции разблокированы для теста.",proCodeOn:"Pro-режим включён.",proCodeOff:"Pro-режим выключен.",proProfiles:"Профили детей",proProfilesSub:"Отдельные настройки, сценарии и прогресс для каждого ребёнка",proRubricatorFull:"Рубрикатор задач и иконок",proRubricatorFullSub:"Фильтр смайликов по гигиене, одежде, еде, выходу и другим рубрикам",proStageCount:"Количество этапов",proStageCountSub:"Настройка 2–8 этапов вместо фиксированных четырёх",proDuration:"Длительность этапов",proDurationSub:"Своя длительность для каждого этапа и общий утренний лимит",proTaskCount:"Количество задач",proTaskCountSub:"Настройка количества задач внутри каждого этапа",proTemplatesFull:"Шаблоны сценариев",proTemplatesFullSub:"Школа, сад, выходной, быстрый режим и свои наборы",proReports:"Отчёты для родителя",proReportsSub:"Сколько времени заняло утро, где были задержки и сколько накоплено"},
+en:{stage0:"Morning<br>rituals",stage1:"Dressing",stage2:"Breakfast",stage3:"Ready<br>to go",settings:"Settings",settingsSub:"Parent section. This is a Free / Pro model demo.",taskEditorTitle:"Task editor",taskEditorText:"Choose emojis. The label appears automatically.",taskEditorOpen:"Edit tasks",emojiPickerTitle:"Choose icon",exitTitle:"Ready to leave?",leave:"Leaving",back:"Go back",exitNote:"If you go back, the current routine continues.",configurePro:"Set up Pro",main:"Main screen",proName:"Morning Timer Pro",promo:"Customize steps, time and tasks for your child.",learn:"Learn more",service:"Service",serviceNote:"Code <b>684100</b> toggles fast testing.",language:"Language",proSettings:"Pro settings",setStages:"Number of steps",setStagesSub:"2–8 steps instead of fixed four",setDuration:"Timer duration",setDurationSub:"Set time for each step",setTodos:"Task lists",setTodosSub:"Edit labels and actions",installTitle:"Install on phone",installText:"Add Morning Timer to your Home Screen.",installHelp:"How to install",shareButton:"Share",proScreen:"Morning Timer Pro",proScreenSub:"Future paid version.",pro1:"✓ Change each timer duration",pro2:"✓ Change total morning limit",pro3:"✓ Create your own steps",pro4:"✓ Edit task lists",wantPro:"I want Pro",proNote:"Payment is not connected.",installScreenTitle:"Installation",installScreenSubtitle:"Open the link in Safari and add it to Home Screen.",installStep1:"1. Open the link in Safari.",installStep2:"2. Tap Share.",installStep3:"3. Choose Add to Home Screen.",installStep4:"4. Tap Add.",locked:"Available in Pro",later:"Later",exitAuto:"All 60 minutes are over. Tap Leaving when you really leave.",exitReady:"You can leave now or go back to the timers.",exitRemaining:"Time left from 60 minutes",exitOvertime:"Extra time is running",resultSuccessTitle:"On time!",resultSaved:"Time saved",resultLateTitle:"Late",resultLate:"Extra time after 60 minutes",servicePrompt:"Enter code",turboOn:"Test mode enabled: 9 seconds per step, 36 seconds total.",turboOff:"Test mode disabled.",interestThanks:"Thank you! Payment is not connected yet.",langSaved:"Language saved.",lockedText:"{feature} is a Morning Timer Pro feature.",shareText:"Try Morning Timer — a simple morning routine timer for kids.",bank:"Bank",lateBank:"Late",change:"Change",stageLabel:"Stage",autoLabel:"Automatic label:",templates:"Templates",freeEmojiLibrary:"Free: one shared emoji set for all stages",proRubricator:"Pro rubricator",rubricHygiene:"Hygiene",rubricClothes:"Clothes",rubricFood:"Food",rubricExit:"Exit",rubricUniversal:"Other",classic:"Classic",school:"School",kindergarten:"Kindergarten",fast:"Fast",resetIcons:"Reset icons",proStatusOff:"Pro is off. Code 684168 toggles Pro mode.",proStatusOn:"Pro is on. All Pro features are unlocked for testing.",proCodeOn:"Pro mode enabled.",proCodeOff:"Pro mode disabled.",proProfiles:"Child profiles",proProfilesSub:"Separate settings, routines and progress for each child",proRubricatorFull:"Task and icon rubricator",proRubricatorFullSub:"Filter emojis by hygiene, clothes, food, exit and other rubrics",proStageCount:"Number of stages",proStageCountSub:"Set 2–8 stages instead of fixed four",proDuration:"Stage duration",proDurationSub:"Custom duration for each stage and the total morning limit",proTaskCount:"Number of tasks",proTaskCountSub:"Set how many tasks each stage has",proTemplatesFull:"Routine templates",proTemplatesFullSub:"School, kindergarten, weekend, fast mode and custom sets",proReports:"Parent reports",proReportsSub:"Morning duration, bottlenecks and saved time"},
+he:{stage0:"טקסי<br>בוקר",stage1:"מתלבשים",stage2:"ארוחת<br>בוקר",stage3:"מוכנים<br>ליציאה",settings:"הגדרות",settingsSub:"אזור להורים. זו הדגמה של מודל Free / Pro.",taskEditorTitle:"עורך משימות",taskEditorText:"בחרו אימוג׳ים. התווית תופיע אוטומטית.",taskEditorOpen:"עריכת משימות",emojiPickerTitle:"בחירת אייקון",exitTitle:"מוכנים לצאת?",leave:"יוצאים",back:"לחזור",exitNote:"אם חוזרים, התרחיש ממשיך.",configurePro:"הגדרות Pro",main:"מסך ראשי",proName:"Morning Timer Pro",promo:"התאימו שלבים, זמן ורשימות משימות לילד.",learn:"לפרטים",service:"שירות",serviceNote:"הקוד <b>684100</b> מפעיל בדיקה מהירה.",language:"שפה",proSettings:"הגדרות Pro",setStages:"מספר שלבים",setStagesSub:"2–8 שלבים במקום ארבעה קבועים",setDuration:"משך טיימרים",setDurationSub:"הגדרת זמן לכל שלב",setTodos:"רשימות משימות",setTodosSub:"עריכת תוויות ופעולות",installTitle:"התקנה בטלפון",installText:"הוסיפו למסך הבית כדי לפתוח כמו אפליקציה.",installHelp:"איך להתקין",shareButton:"שיתוף",proScreen:"Morning Timer Pro",proScreenSub:"גרסה בתשלום בעתיד.",pro1:"✓ שינוי משך כל טיימר",pro2:"✓ שינוי מגבלת הבוקר",pro3:"✓ יצירת שלבים אישיים",pro4:"✓ עריכת רשימות משימות",wantPro:"רוצה Pro",proNote:"התשלום עדיין לא מחובר.",installScreenTitle:"התקנה",installScreenSubtitle:"פתחו בספארי והוסיפו למסך הבית.",installStep1:"1. פתחו בספארי.",installStep2:"2. לחצו שיתוף.",installStep3:"3. בחרו הוספה למסך הבית.",installStep4:"4. לחצו הוסף.",locked:"זמין ב-Pro",later:"אחר כך",exitAuto:"כל 60 הדקות נגמרו. לחצו יוצאים כשבאמת יוצאים.",exitReady:"אפשר לצאת עכשיו או לחזור לטיימרים.",exitRemaining:"נשאר מתוך 60 דקות",exitOvertime:"הזמן הנוסף רץ",resultSuccessTitle:"הספקתם!",resultSaved:"זמן שנחסך",resultLateTitle:"איחור",resultLate:"זמן נוסף אחרי 60 דקות",servicePrompt:"הזן קוד",turboOn:"מצב בדיקה הופעל: 9 שניות לשלב, 36 שניות בסך הכול.",turboOff:"מצב בדיקה כובה.",interestThanks:"תודה! התשלום עדיין לא מחובר.",langSaved:"השפה נשמרה.",lockedText:"{feature} היא יכולת של Morning Timer Pro.",shareText:"נסו את Morning Timer — טיימר בוקר פשוט לילדים.",bank:"קופה",lateBank:"איחור",change:"שינוי",stageLabel:"שלב",autoLabel:"תווית אוטומטית:",templates:"תבניות",freeEmojiLibrary:"Free: סט אימוג׳י משותף לכל השלבים",proRubricator:"מסנן Pro",rubricHygiene:"היגיינה",rubricClothes:"בגדים",rubricFood:"אוכל",rubricExit:"יציאה",rubricUniversal:"אחר",classic:"קלאסי",school:"בית ספר",kindergarten:"גן",fast:"מהיר",resetIcons:"איפוס אייקונים",proStatusOff:"Pro כבוי. הקוד 684168 מפעיל/מכבה מצב Pro.",proStatusOn:"Pro פעיל. כל יכולות Pro פתוחות לבדיקה.",proCodeOn:"מצב Pro הופעל.",proCodeOff:"מצב Pro כובה.",proProfiles:"פרופילים לילדים",proProfilesSub:"הגדרות, תרחישים והתקדמות נפרדים לכל ילד",proRubricatorFull:"מסנן משימות ואייקונים",proRubricatorFullSub:"סינון אימוג׳ים לפי היגיינה, בגדים, אוכל, יציאה ועוד",proStageCount:"מספר שלבים",proStageCountSub:"הגדרת 2–8 שלבים במקום ארבעה קבועים",proDuration:"משך שלבים",proDurationSub:"משך אישי לכל שלב ומגבלת בוקר כללית",proTaskCount:"מספר משימות",proTaskCountSub:"הגדרת מספר משימות בכל שלב",proTemplatesFull:"תבניות תרחישים",proTemplatesFullSub:"בית ספר, גן, סופ״ש, מצב מהיר וסטים אישיים",proReports:"דוחות להורה",proReportsSub:"משך הבוקר, נקודות עיכוב וזמן שנחסך"}};
+
+var state={screen:"main",active:null,overtimeStartAt:null,dismissedExit:false,morningStartedAt:null,lateStartedAt:null,finalStageEndedAt:null,proEnabled:false,language:"ru",tasks:{},stageCompleted:[false,false,false,false],stageSaved:[0,0,0,0],icons:defaultTasks.map(function(t){return t.emoji}),stages:buttons.map(function(_,i){return{index:i,remaining:DEFAULT_DURATION,finished:false}})};
+var selectedTaskIndex=null;
+
+function tr(k){var l=text[state.language]?state.language:"ru";return text[l][k]||text.ru[k]||k}
+function emojiLabel(emoji){var l=state.language;var entry=emojiLabels[emoji];return entry?(entry[l]||entry.ru||emoji):emoji}
+function pad(n){return n<10?"0"+n:String(n)}function format(s){s=Math.max(0,Math.ceil(s));return pad(Math.floor(s/60))+":"+pad(s%60)}
+function applyConfig(){config.duration=config.turbo?TURBO_DURATION:DEFAULT_DURATION;config.total=config.turbo?TURBO_TOTAL:DEFAULT_TOTAL;config.warning=config.turbo?TURBO_WARNING:DEFAULT_WARNING}
+function spent(){return state.stages.reduce(function(sum,it){return sum+(config.duration-it.remaining)},0)}function remainingTotal(){return Math.max(0,config.total-spent())}function allOut(){return state.stages.every(function(it){return it.remaining<=0})}function totalSaved(){return state.stageSaved.reduce(function(a,b){return a+b},0)}
+function bankAmount(){
+  return totalSaved();
+}
+function bankCountdownElapsed(){
+  if(state.finalStageEndedAt===null)return 0;
+  return Math.max(0,(Date.now()-state.finalStageEndedAt)/1000);
+}
+function visibleBankAmount(){
+  var bank=bankAmount();
+  if(state.finalStageEndedAt===null)return bank;
+  return Math.max(0,bank-bankCountdownElapsed());
+}
+function lateElapsed(){
+  var bank=bankAmount();
+  if(state.finalStageEndedAt!==null){
+    return Math.max(0,bankCountdownElapsed()-bank);
+  }
+  if(state.morningStartedAt===null)return 0;
+  var elapsed=(Date.now()-state.morningStartedAt)/1000;
+  return Math.max(0,elapsed-(config.total+bank));
+}
+
+function ensureFinalStageCountdownStarted(){
+  if(
+    state.finalStageEndedAt===null &&
+    state.stages &&
+    state.stages[3] &&
+    state.stages[3].remaining<=0 &&
+    !allTasksChecked()
+  ){
+    state.finalStageEndedAt=Date.now();
+  }
+}
+function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(Object.assign({},state,{turbo:config.turbo})))}catch(e){}}
+function load(){try{var raw=localStorage.getItem(STORAGE_KEY);if(!raw)return;var p=JSON.parse(raw);if(!p)return;if(typeof p.turbo==="boolean"){config.turbo=p.turbo;applyConfig()}state.screen=p.screen||"main";state.active=typeof p.active==="number"?p.active:null;state.overtimeStartAt=typeof p.overtimeStartAt==="number"?p.overtimeStartAt:null;state.dismissedExit=!!p.dismissedExit;state.morningStartedAt=typeof p.morningStartedAt==="number"?p.morningStartedAt:null;state.lateStartedAt=typeof p.lateStartedAt==="number"?p.lateStartedAt:null;state.finalStageEndedAt=typeof p.finalStageEndedAt==="number"?p.finalStageEndedAt:null;state.proEnabled=!!p.proEnabled;state.language=p.language||"ru";state.tasks=p.tasks||{};state.stageCompleted=Array.isArray(p.stageCompleted)?p.stageCompleted:[false,false,false,false];state.stageSaved=Array.isArray(p.stageSaved)?p.stageSaved:[0,0,0,0];state.icons=Array.isArray(p.icons)&&p.icons.length===12?p.icons:defaultTasks.map(function(t){return t.emoji});if(Array.isArray(p.stages)&&p.stages.length===4){p.stages.forEach(function(it,i){state.stages[i].remaining=typeof it.remaining==="number"?Math.max(0,Math.min(config.duration,it.remaining)):config.duration;state.stages[i].finished=!!it.finished})}}catch(e){}}
+function applyText(){var l=state.language;document.documentElement.lang=l;document.documentElement.dir=l==="he"?"rtl":"ltr";document.querySelectorAll("[data-i]").forEach(function(el){var key=el.getAttribute("data-i");if(tr(key))el.innerHTML=tr(key)});taskItems.forEach(function(item,i){var label=item.querySelector(".icon-label");if(label)label.textContent=emojiLabel(state.icons[i]||defaultTasks[i].emoji)})}
+function applyIcons(){taskItems.forEach(function(item,i){var icon=item.querySelector(".icon");if(icon)icon.textContent=state.icons[i]||defaultTasks[i].emoji})}
+function updateProUI(){
+  document.body.classList.toggle("pro-enabled",!!state.proEnabled);
+  var status=document.getElementById("proStatus");
+  if(status){
+    status.textContent=state.proEnabled?tr("proStatusOn"):tr("proStatusOff");
+    status.classList.toggle("enabled",!!state.proEnabled);
+  }
+  [].slice.call(document.querySelectorAll(".lock")).forEach(function(lock){
+    lock.textContent=state.proEnabled?"✓ Pro":"🔒 Pro";
+  });
+}
+function setScreen(name){state.screen=name;[["exit",exitScreen],["result",resultScreen],["settings",settingsScreen],["pro",proScreen],["install",installScreen],["editor",taskEditorScreen],["emoji",emojiPickerScreen]].forEach(function(p){if(p[1])p[1].classList.toggle("visible",name===p[0])})}
+
+var lastTime=Date.now();
+function sync(){
+  var now=Date.now(),delta=(now-lastTime)/1000;
+  lastTime=now;
+  if(delta>0&&state.active!==null&&state.screen!=="result"){
+    var activeIndex=state.active;
+    var it=state.stages[activeIndex];
+    it.remaining=Math.max(0,it.remaining-delta);
+    if(it.remaining<=0){
+      it.remaining=0;
+      advanceStageByTimeout(activeIndex);
+    }
+  }
+  if(state.screen==="main"&&allTasksChecked()&&!state.dismissedExit)openExit(false);
+}
+function openExit(auto){state.dismissedExit=false;if(state.overtimeStartAt===null&&lateElapsed()>0)state.overtimeStartAt=Date.now();setScreen("exit");if(exitSubtitle)exitSubtitle.textContent=auto?tr("exitAuto"):tr("exitReady");save()}
+function showResult(){
+  sync();
+  var bank=visibleBankAmount();
+  var late=lateElapsed();
+  if(late<=0){
+    resultCard.className="panel result-card good";
+    resultTitle.textContent=tr("resultSuccessTitle");
+    resultSubtitle.textContent=tr("resultSaved");
+    resultTime.textContent=format(bank);
+  }else{
+    resultCard.className="panel result-card late";
+    resultTitle.textContent=tr("resultLateTitle");
+    resultSubtitle.textContent=tr("resultLate");
+    resultTime.textContent=format(late);
+  }
+  state.active=null;
+  setScreen("result");
+  save();
+}
+function checkedCount(stageIndex){var start=stageIndex*3,c=0;for(var i=0;i<3;i++)if(state.tasks["task-"+(start+i)])c++;return c}
+function allTasksChecked(){for(var i=0;i<12;i++){if(!state.tasks["task-"+i])return false}return true}
+function maybeOpenExitAfterManualCompletion(){
+  if(state.screen==="main"&&allTasksChecked()){
+    state.dismissedExit=false;
+    openExit(false);
+  }
+}
+function completeStage(stageIndex){
+  if(state.stageCompleted[stageIndex])return;
+  state.stageSaved[stageIndex]=Math.max(0,state.stages[stageIndex].remaining);
+  state.stageCompleted[stageIndex]=true;
+  state.stages[stageIndex].finished=true;
+  state.active=null;
+  if(stageIndex<3){state.active=stageIndex+1;state.dismissedExit=false}else{maybeOpenExitAfterManualCompletion();}
+}
+function advanceStageByTimeout(stageIndex){
+  if(state.stageCompleted[stageIndex])return;
+  state.stageSaved[stageIndex]=0;
+  state.stageCompleted[stageIndex]=true;
+  state.stages[stageIndex].remaining=0;
+  state.stages[stageIndex].finished=true;
+  state.active=null;
+  if(stageIndex<3){
+    state.active=stageIndex+1;
+    state.dismissedExit=false;
+  }else{
+    state.dismissedExit=true;
+  }
+}
+function maybeCompleteStage(stageIndex){if(checkedCount(stageIndex)>=3)completeStage(stageIndex)}
+function renderEditor(){if(!taskEditorList)return;var l=state.language,html='<div class="editor-stage"><div class="editor-stage-title">'+tr("templates")+'</div><div class="language-row"><button class="chip" data-template="classic">'+tr("classic")+'</button><button class="chip" data-template="school">'+tr("school")+'</button><button class="chip" data-template="kindergarten">'+tr("kindergarten")+'</button><button class="chip" data-template="fast">'+tr("fast")+'</button></div><button class="editor-button" id="resetIconsButton" type="button">'+tr("resetIcons")+'</button></div>';for(var s=0;s<4;s++){html+='<div class="editor-stage"><div class="editor-stage-title">'+(stageTitles[l]||stageTitles.ru)[s]+'</div>';for(var i=0;i<3;i++){var idx=s*3+i,emoji=state.icons[idx]||defaultTasks[idx].emoji;html+='<div class="task-edit-row"><div class="task-edit-emoji">'+emoji+'</div><div><div class="task-edit-label">'+emojiLabel(emoji)+'</div><div class="row-subtitle">'+tr("autoLabel")+' '+emojiLabel(emoji)+'</div></div><button class="task-edit-button" data-edit-task="'+idx+'">'+tr("change")+'</button></div>'}html+="</div>"}taskEditorList.innerHTML=html;[].slice.call(taskEditorList.querySelectorAll("[data-edit-task]")).forEach(function(btn){btn.addEventListener("click",function(){selectedTaskIndex=Number(btn.getAttribute("data-edit-task"));openEmojiPicker(selectedTaskIndex)})});[].slice.call(taskEditorList.querySelectorAll("[data-template]")).forEach(function(btn){btn.addEventListener("click",function(){var name=btn.getAttribute("data-template");if(templates[name]){state.icons=templates[name].slice();applyIcons();renderEditor();render()}})});var rb=document.getElementById("resetIconsButton");if(rb)rb.addEventListener("click",function(){state.icons=defaultTasks.map(function(t){return t.emoji});applyIcons();renderEditor();render()})}
+function openEmojiPicker(idx){
+  selectedTaskIndex=idx;
+  if(emojiPickerSubtitle)emojiPickerSubtitle.textContent=tr("autoLabel")+" "+emojiLabel(state.icons[idx]||defaultTasks[idx].emoji);
+
+  if(emojiGrid){
+    var rubricHtml='<div style="grid-column:1/-1;background:#fff;border-radius:18px;padding:10px;text-align:left;font-weight:900;color:rgba(35,48,68,.72)">'+tr("freeEmojiLibrary")+'</div>';
+    rubricHtml+='<div style="grid-column:1/-1;background:#F4EDFF;border-radius:18px;padding:10px;text-align:left"><div style="font-weight:1000;margin-bottom:8px">'+tr("proRubricator")+' 🔒</div><div style="display:flex;flex-wrap:wrap;gap:6px">';
+    [
+      tr("rubricHygiene"),
+      tr("rubricClothes"),
+      tr("rubricFood"),
+      tr("rubricExit"),
+      tr("rubricUniversal")
+    ].forEach(function(name){
+      rubricHtml+='<button type="button" class="chip" style="opacity:.55;min-height:34px" disabled>'+name+'</button>';
+    });
+    rubricHtml+='</div></div>';
+
+    emojiGrid.innerHTML=rubricHtml+emojiLibrary.map(function(e){
+      return '<button class="emoji-choice '+(state.icons[idx]===e?"active":"")+'" data-emoji="'+e+'">'+e+'<div style="font-size:10px;font-weight:900;margin-top:2px">'+emojiLabel(e)+'</div></button>';
+    }).join("");
+
+    [].slice.call(emojiGrid.querySelectorAll("[data-emoji]")).forEach(function(btn){
+      btn.addEventListener("click",function(){
+        state.icons[selectedTaskIndex]=btn.getAttribute("data-emoji");
+        applyIcons();
+        renderEditor();
+        setScreen("editor");
+        render();
+      });
+    });
+  }
+
+  setScreen("emoji");
+  render();
+}
+function render(){sync();ensureFinalStageCountdownStarted();applyText();applyIcons();updateProUI();buttons.forEach(function(b,i){var it=state.stages[i],timer=b.querySelector("[data-timer]"),progress=Math.max(0,Math.min(100,Math.round((it.remaining/config.duration)*100)));if(timer)timer.textContent=format(it.remaining);b.style.setProperty("--progress",progress+"%");b.classList.toggle("warning",it.remaining>0&&it.remaining<=config.warning&&!it.finished);b.classList.toggle("finished",it.finished||it.remaining<=0);b.classList.toggle("active",state.active===i);b.classList.toggle("completed-stage",!!state.stageCompleted[i]);var badge=b.querySelector("[data-saved-badge]");if(badge){if(state.stageCompleted[i]&&state.stageSaved[i]>0){badge.textContent="🏆 +"+format(state.stageSaved[i]);badge.classList.add("visible")}else{badge.textContent="";badge.classList.remove("visible")}}});taskItems.forEach(function(item){var key=item.getAttribute("data-task-key");if(key)item.classList.toggle("checked",!!state.tasks[key])});if(state.screen==="exit"){
+  var ebank=visibleBankAmount();
+  var elate=lateElapsed();
+  if(elate<=0){
+    exitLiveTime.textContent=format(ebank);
+    exitSubtitle.textContent=tr("exitRemaining");
+  }else{
+    exitLiveTime.textContent=format(elate);
+    exitSubtitle.textContent=tr("exitOvertime");
+  }
+}if(savingsTotal&&savingsPill){
+  var bank=visibleBankAmount();
+  var late=lateElapsed();
+  var visible=state.screen==="main"&&(bank>0||late>0);
+  savingsTotal.classList.toggle("visible",visible);
+  savingsPill.classList.toggle("late",visible&&late>0);
+  savingsPill.classList.toggle("empty",false);
+  if(late>0){
+    savingsPill.textContent="⏰ "+tr("lateBank")+" +"+format(late);
+  }else if(bank>0){
+    savingsPill.textContent="🏆 "+tr("bank")+" +"+format(bank);
+  }
+}langButtons.forEach(function(btn){btn.classList.toggle("active",btn.getAttribute("data-lang")===state.language)});if(resetButton)resetButton.innerHTML=config.turbo?(state.language==="en"?"↺ Reset / TEST":state.language==="he"?"↺ איפוס / TEST":"↺ Сброс / TEST"):(state.language==="en"?"↺ Reset":state.language==="he"?"↺ איפוס":"↺ Сбросить");save()}
+function resetAll(){state.screen="main";state.active=null;state.overtimeStartAt=null;state.dismissedExit=false;state.morningStartedAt=null;state.lateStartedAt=null;state.finalStageEndedAt=null;state.tasks={};state.stageCompleted=[false,false,false,false];state.stageSaved=[0,0,0,0];state.stages=buttons.map(function(_,i){return{index:i,remaining:config.duration,finished:false}});lastTime=Date.now();setScreen("main");render()}function setTurboMode(enabled){config.turbo=!!enabled;applyConfig();resetAll()}
+function handleTaskClick(item){
+  var key=item.getAttribute("data-task-key"),stageIndex=Number(item.getAttribute("data-stage-index"));
+  if(!key||isNaN(stageIndex))return;
+  state.tasks[key]=!state.tasks[key];if(state.tasks[key]&&state.morningStartedAt===null){state.morningStartedAt=Date.now();}
+
+  if(state.tasks[key]&&!state.stageCompleted[stageIndex]){
+    state.active=stageIndex;
+    state.dismissedExit=false;
+  }
+
+  if(!state.stageCompleted[stageIndex]){
+    maybeCompleteStage(stageIndex);
+  }else{
+    maybeOpenExitAfterManualCompletion();
+  }
+
+  maybeOpenExitAfterManualCompletion();
+  render();
+}
+buttons.forEach(function(b){b.addEventListener("click",function(ev){ev.preventDefault()},{passive:false})});taskItems.forEach(function(item,idx){item.setAttribute("data-task-key","task-"+idx);item.setAttribute("data-stage-index",String(Math.floor(idx/3)));item.addEventListener("click",function(ev){ev.preventDefault();ev.stopPropagation();handleTaskClick(item)},{passive:false})});
+if(resetButton)resetButton.addEventListener("click",function(){var code=prompt(tr("servicePrompt"));if(code==="684"){resetAll();return}if(code==="684100"){setTurboMode(!config.turbo);alert(config.turbo?tr("turboOn"):tr("turboOff"));return}if(code==="684168"){state.proEnabled=!state.proEnabled;alert(state.proEnabled?tr("proCodeOn"):tr("proCodeOff"));render();return}});
+if(settingsButton)settingsButton.addEventListener("click",function(){setScreen("settings");render()});if(settingsClose)settingsClose.addEventListener("click",function(){setScreen("main");render()});if(taskEditorButton)taskEditorButton.addEventListener("click",function(){renderEditor();setScreen("editor");render()});if(taskEditorClose)taskEditorClose.addEventListener("click",function(){setScreen("settings");render()});if(emojiPickerClose)emojiPickerClose.addEventListener("click",function(){setScreen("editor");render()});
+if(proClose)proClose.addEventListener("click",function(){setScreen("settings");render()});if(promoButton)promoButton.addEventListener("click",function(){setScreen("settings");render();setTimeout(function(){var el=document.getElementById("proSettingsAnchor");if(el)el.scrollIntoView({behavior:"smooth",block:"start"});},50)});if(resultProButton)resultProButton.addEventListener("click",function(){setScreen("pro");render()});if(backButton)backButton.addEventListener("click",function(){state.dismissedExit=true;setScreen("main");render()});if(leaveButton)leaveButton.addEventListener("click",showResult);if(resultBackButton)resultBackButton.addEventListener("click",function(){state.dismissedExit=true;setScreen("main");render()});if(lockLearn)lockLearn.addEventListener("click",function(){if(lockModal)lockModal.classList.remove("visible");setScreen("pro");render()});if(lockLater)lockLater.addEventListener("click",function(){if(lockModal)lockModal.classList.remove("visible")});if(interestButton)interestButton.addEventListener("click",function(){alert(tr("interestThanks"))});if(installHelpButton)installHelpButton.addEventListener("click",function(){setScreen("install");render()});if(installClose)installClose.addEventListener("click",function(){setScreen("settings");render()});if(shareButton)shareButton.addEventListener("click",function(){var txt=tr("shareText"),url=location.href.split("?")[0];if(navigator.share)navigator.share({title:"Morning Timer",text:txt,url:url}).catch(function(){});else alert(txt)});
+lockedButtons.forEach(function(btn){btn.addEventListener("click",function(){if(state.proEnabled){if(lockText)lockText.textContent=(btn.getAttribute("data-feature")||"Pro")+" — Pro включён. Настройка будет активирована в следующем функциональном слое.";if(lockModal)lockModal.classList.add("visible");return}if(lockText)lockText.textContent=tr("lockedText").replace("{feature}",btn.getAttribute("data-feature")||"Pro");if(lockModal)lockModal.classList.add("visible")})});langButtons.forEach(function(btn){btn.addEventListener("click",function(){state.language=btn.getAttribute("data-lang")||"ru";alert(tr("langSaved"));render();if(state.screen==="editor")renderEditor()})});
+document.addEventListener("visibilitychange",function(){lastTime=Date.now();render()});window.addEventListener("pageshow",function(){lastTime=Date.now();render()});if("serviceWorker" in navigator)window.addEventListener("load",function(){navigator.serviceWorker.register("./service-worker.js").catch(function(){})});
+applyConfig();load();setScreen(state.screen||"main");lastTime=Date.now();render();setInterval(render,250);
+})();
+</script>
+</body></html>
+</body></html>
