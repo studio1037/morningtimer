@@ -1,0 +1,12 @@
+{
+  "name": "morningtimer-qa",
+  "private": true,
+  "scripts": {
+    "dev": "python3 -m http.server 4173 --bind 127.0.0.1",
+    "test": "playwright test",
+    "test:baseline": "playwright test --grep-invert @known-defect",
+    "test:defects": "playwright test --grep @known-defect",
+    "test:report": "playwright show-report"
+  },
+  "devDependencies": { "@playwright/test": "1.56.1" }
+}
