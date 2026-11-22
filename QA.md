@@ -93,3 +93,22 @@ Recorded result (2026-11-01): **9 baseline PASS, 3 known-defect assertion FAIL
 Observed defect values: delayed overflow left stage two at `00:09` rather than
 `00:00`; visibility resume left stage one at `15:00` rather than `14:00`;
 elapsed reload restored approximately `14:55` rather than `13:55`.
+
+## Issue #1 extension
+
+`npm run test:contracts` runs the separate `@v29-contract` expected-failure case:
+unchecking a completed stage should resume its timer. The current baseline instead
+keeps the next stage active. This is a future requirement, not validation of the
+external v2.9 Stable ZIP. `npm run test:baseline` excludes both defect and future
+contract categories. `npm test` executes all three categories.
+
+See [delivery and v2.9 import plan](docs/ISSUE-1-DELIVERY.md) for the exact audited
+identifiers, CI design, preview isolation, approval gates, rollback and direct
+MASTER review instructions. No CI/deployment workflow is enabled in this PR.
+
+Issue #1 validation (2026-11-22, Chromium 154): **9 baseline PASS, 3 existing
+recovery defects FAIL as expected, 1 future v2.9 contract FAIL as expected,
+0 unexpected failures, 0 skipped**; `npm test` exited 0. The future contract fails
+because stage one remains `finished completed-stage` instead of becoming active.
+This result supersedes the initial 12-test record above; no production fixes were
+made. Machine-readable results are in ignored `test-results/results.json`.

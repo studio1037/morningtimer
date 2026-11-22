@@ -136,3 +136,15 @@ test('reload recovers time elapsed since saved snapshot @known-defect', async ({
   test.fail(true, 'load() restores remaining time without elapsed recovery');
   await expect(timer(page, 0)).toHaveText('13:55', { timeout: 1000 });
 });
+
+// Future contract from issue #1, not a claim about the unavailable v2.9 ZIP.
+test('unchecking a completed stage resumes its timer @v29-contract', async ({ page }) => {
+  await complete(page, 0);
+  await expect(page.locator('.stage').nth(1)).toHaveClass(/active/);
+  await task(page, 0).click();
+  await expect(task(page, 0)).not.toHaveClass(/checked/);
+  test.fail(true, 'v2.9-only contract: current app leaves the next stage active');
+  await expect(page.locator('.stage').nth(0)).toHaveClass(/active/, { timeout: 1000 });
+  await page.clock.runFor(1000);
+  await expect(timer(page, 0)).toHaveText('14:59');
+});
