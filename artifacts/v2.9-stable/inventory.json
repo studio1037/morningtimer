@@ -1,0 +1,206 @@
+[
+  {
+    "path": "APP_ENTITY_TAXONOMY_RU.md",
+    "bytes": 5225,
+    "sha256": "aa29e17762602a018699fe38b21b1dbbd4e454d917d00e3b5d04dd1c97349c66",
+    "change": "unchanged"
+  },
+  {
+    "path": "BRANDING_SOCIAL_INSTALL_NOTES.md",
+    "bytes": 630,
+    "sha256": "10aa68b6f153e6a784a08054a51ae2f337e36f46e996b360ae2c21986ff49c09",
+    "change": "unchanged"
+  },
+  {
+    "path": "CHANGELOG_v22c1_RU.md",
+    "bytes": 1289,
+    "sha256": "68d5ebecb29a988b373dfb2a10ecfe83fb22e40f48069f55601677a863b84380",
+    "change": "unchanged"
+  },
+  {
+    "path": "CHANGELOG_v22c2_RU.md",
+    "bytes": 830,
+    "sha256": "9e581f335ff65aaeded12fd306eb7db7c0dd2acec1925ad8d3435319eb1e9b3b",
+    "change": "unchanged"
+  },
+  {
+    "path": "CHANGELOG_v22c3_RU.md",
+    "bytes": 604,
+    "sha256": "cae9c0a9d24745ea155f81fd2b0aea4ecb70bea45211bea5ebb4fc49f9d6f475",
+    "change": "unchanged"
+  },
+  {
+    "path": "CHANGELOG_v22c4_RU.md",
+    "bytes": 636,
+    "sha256": "1f795be625f6e40796b6b02ebfbb4a0b1f352060d9dfae44eca6b7b1129f8bfb",
+    "change": "unchanged"
+  },
+  {
+    "path": "CHANGELOG_v22c5_RU.md",
+    "bytes": 927,
+    "sha256": "4794b7b5d1fcb722a957740f1b22b58e6192f93560a71b677f0ed61d2ee9e990",
+    "change": "unchanged"
+  },
+  {
+    "path": "CHANGELOG_v23c_RU.md",
+    "bytes": 1082,
+    "sha256": "0a05b38c7997a839fecb6cc202922f0a05ab09b4842b371d8523c6f06e8a491d",
+    "change": "unchanged"
+  },
+  {
+    "path": "CHANGELOG_v23e_RU.md",
+    "bytes": 690,
+    "sha256": "4e459d57849271dec07ca122a3a2f713d831d2d1c06d8b9a114c59527fcacc89",
+    "change": "unchanged"
+  },
+  {
+    "path": "CHANGELOG_v24a1_RU.md",
+    "bytes": 1069,
+    "sha256": "4fe52e56496132757203aecc6e0fb1598282ee0c5785953170801f89dcc9a251",
+    "change": "unchanged"
+  },
+  {
+    "path": "CHANGELOG_v24a2_RU.md",
+    "bytes": 1094,
+    "sha256": "c5011b521e21627cd055fa2d43c0a4d070a22508b606a20bd9b11c35d3d41317",
+    "change": "unchanged"
+  },
+  {
+    "path": "CHANGELOG_v24a3_RU.md",
+    "bytes": 1389,
+    "sha256": "99cf7f3e819214f1f7f7f4af978bf8e7528ac852966e7630991f7e2a99c3dac6",
+    "change": "unchanged"
+  },
+  {
+    "path": "CHANGELOG_v24a4_RU.md",
+    "bytes": 1116,
+    "sha256": "38ec3d36785998e600d15dd16adf83955552b72eed41350a8e00d1a50849cb80",
+    "change": "unchanged"
+  },
+  {
+    "path": "CHANGELOG_v24a5_RU.md",
+    "bytes": 1067,
+    "sha256": "da9dbeda455f92c0950ee8c37b5a36f858056b04762cfac803c7335430ed32e8",
+    "change": "unchanged"
+  },
+  {
+    "path": "CHANGELOG_v24a6_RU.md",
+    "bytes": 1110,
+    "sha256": "8f3f538e403f48885c8d8b48c838ebb74326ed3d2943b4486bad1a5f581d672d",
+    "change": "unchanged"
+  },
+  {
+    "path": "CHANGELOG_v24a7_RU.md",
+    "bytes": 1238,
+    "sha256": "ea9543ce447071df8251d99543d90f3ccd88e80d211f699bee2aeceb148c9f36",
+    "change": "unchanged"
+  },
+  {
+    "path": "CHANGELOG_v24a8_RU.md",
+    "bytes": 1189,
+    "sha256": "8795d4c39efc076a5bc222aff3b25dd925bee27a20c4989d55d92e3632737c5e",
+    "change": "unchanged"
+  },
+  {
+    "path": "CHANGELOG_v24a_RU.md",
+    "bytes": 928,
+    "sha256": "58e78594c54f33baee2f6d7281baccc49a67a0780857d120122e9e5001a8178c",
+    "change": "unchanged"
+  },
+  {
+    "path": "CHANGELOG_v29_STABLE_RU.md",
+    "bytes": 415,
+    "sha256": "5f255ef11ed7d5277a1312ab4d1c1a3f29e19ffb6264ee83e11ee350df74a0f7",
+    "change": "added"
+  },
+  {
+    "path": "CHANGELOG_v301_REBUILT_RU.md",
+    "bytes": 515,
+    "sha256": "3d45ff64f51379930b72a4cef9e49b1ed17aeadbc55049490c21d9a2e0429581",
+    "change": "added"
+  },
+  {
+    "path": "FLAT_UPLOAD_INSTRUCTIONS_RU.md",
+    "bytes": 1118,
+    "sha256": "815f205309ba813708f344d8446d1bf1f2558f73118d2c7bc2acd33598c8f096",
+    "change": "unchanged"
+  },
+  {
+    "path": "LOCALIZATION_NOTES.md",
+    "bytes": 255,
+    "sha256": "8cc7812fbf8ac867df2d7b62a08d16009111c40ab511c18926dced1ce6f3f3b6",
+    "change": "unchanged"
+  },
+  {
+    "path": "README.md",
+    "bytes": 837,
+    "sha256": "8abb70144881fca457da23927a2143f9ccfc2329a6464a3db96e756a8937c47b",
+    "change": "modified"
+  },
+  {
+    "path": "apple-touch-icon.png",
+    "bytes": 1903,
+    "sha256": "36bd92551090379f8e9ff654abc6a58941e1e33890d9bdd5d1bbddf12ba1d2a9",
+    "change": "unchanged"
+  },
+  {
+    "path": "icon-192.png",
+    "bytes": 2024,
+    "sha256": "9e0f7cada35766bfd69cc748fe63db5471502c411f8eb95a1808497597ef1967",
+    "change": "unchanged"
+  },
+  {
+    "path": "icon-512.png",
+    "bytes": 5533,
+    "sha256": "6d664baaf2828882dd5536f9afae4bc7f528ff5c6191a1c1074c3cc3718cc5ef",
+    "change": "unchanged"
+  },
+  {
+    "path": "index.html",
+    "bytes": 67229,
+    "sha256": "393ea9bcc6ec892505991e832933eafd4b3b02cc9ace599979a5dc1dec7d4d7b",
+    "change": "modified"
+  },
+  {
+    "path": "install-card-en-1080.png",
+    "bytes": 33716,
+    "sha256": "9491055afb1a9bb3500197d2ca55822f261ca697bfcbb892e83d79da54f5bb96",
+    "change": "unchanged"
+  },
+  {
+    "path": "install-card-he-1080.png",
+    "bytes": 26656,
+    "sha256": "17a5a09f0c8271fa51d6c81b322b37bb4ddc6840169a8430c15153500aa49d9e",
+    "change": "unchanged"
+  },
+  {
+    "path": "install-card-ru-1080.png",
+    "bytes": 37776,
+    "sha256": "9f68a5a3b94c57184bc1acd3be36f568a95fb14178228f8c77ca3ec9b944dcbf",
+    "change": "unchanged"
+  },
+  {
+    "path": "manifest.json",
+    "bytes": 756,
+    "sha256": "d988c2548170ad6ae4787b2c774790483ba67332b6ae9daeaa91d32e3c97614b",
+    "change": "unchanged"
+  },
+  {
+    "path": "maskable-icon-512.png",
+    "bytes": 5533,
+    "sha256": "6d664baaf2828882dd5536f9afae4bc7f528ff5c6191a1c1074c3cc3718cc5ef",
+    "change": "unchanged"
+  },
+  {
+    "path": "og-preview-1200x630.png",
+    "bytes": 41771,
+    "sha256": "f0cc7e5e7b54a7b2534e239a1346622b192bf958c0ca7183c1ca2fc4aa460b24",
+    "change": "unchanged"
+  },
+  {
+    "path": "service-worker.js",
+    "bytes": 964,
+    "sha256": "c844b8e2b40f7d0b30cc3ca4ddb7b0544c1d2709cfe6615299e276783ce7e52c",
+    "change": "modified"
+  }
+]

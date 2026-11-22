@@ -31,13 +31,13 @@ html[dir="rtl"] .title,html[dir="rtl"] .timer{text-align:right;left:116px;right:
 @media(max-height:700px){.app{padding:calc(6px + var(--safe-top)) calc(6px + var(--safe-right)) calc(6px + var(--safe-bottom)) calc(6px + var(--safe-left));grid-template-rows:repeat(4,minmax(0,1fr)) 42px;grid-template-columns:minmax(0,1fr) 52px;gap:6px}.stage{border-radius:22px}.title{left:16px;top:13px;right:110px;font-size:clamp(21px,6.4vw,28px)}.timer{left:16px;bottom:8px;right:110px;font-size:clamp(42px,13vw,58px)}.icons{right:8px;width:98px;gap:3px}.icon-item{grid-template-columns:minmax(0,1fr) 31px;column-gap:4px;min-height:33px}.icon{width:31px;height:31px;border-radius:11px;font-size:17px}.icon-label{font-size:clamp(10px,2.8vw,12px)}.category{width:min(30vw,108px);height:min(30vw,108px);border-radius:28px;font-size:min(19vw,68px);opacity:.22}.panel{border-radius:28px;padding:14px}.choice-button{min-height:62px}html[dir="rtl"] .title{left:106px;right:16px}html[dir="rtl"] .timer{left:106px;right:16px}html[dir="rtl"] .icons{left:8px;right:auto}html[dir="rtl"] .icon-item{grid-template-columns:31px minmax(0,1fr)}}
 @media(min-width:700px){.app{max-width:520px;margin:0 auto}.screen{max-width:560px;left:50%;transform:translateX(-50%)}}
 
-/* v2.4-a.8 template fit */
+/* v2.9 template fit */
 .editor-stage .language-row{flex-wrap:wrap}.editor-stage .chip{min-height:38px;padding:0 11px;font-size:14px}.emoji-choice{padding:3px;line-height:1.05}
 
-/* v2.4-a.8 picker notes */
+/* v2.9 picker notes */
 .emoji-grid .chip:disabled{cursor:not-allowed}.emoji-grid>div{box-shadow:0 4px 12px rgba(35,48,68,.06)}
 
-/* v2.4-a.8 exit-after-all-tasks + late bank */
+/* v2.9 exit-after-all-tasks + late bank */
 .exit-hero{display:flex;justify-content:center;margin:0 0 16px}
 .exit-child{width:132px;height:132px;border-radius:42px;background:linear-gradient(135deg,#BDE4FF,#CFF3DA);display:grid;place-items:center;position:relative;box-shadow:0 12px 26px rgba(35,48,68,.14);border:4px solid rgba(255,255,255,.72)}
 .exit-face{font-size:66px;line-height:1;filter:drop-shadow(0 4px 8px rgba(35,48,68,.10))}
@@ -47,7 +47,7 @@ html[dir="rtl"] .title,html[dir="rtl"] .timer{text-align:right;left:116px;right:
 @media(max-height:700px){.exit-child{width:108px;height:108px;border-radius:34px}.exit-face{font-size:54px}.exit-bag{width:46px;height:46px;border-radius:16px;font-size:27px}.exit-hero{margin-bottom:10px}}
 
 
-/* v2.4-a.8 Pro finalization */
+/* v2.9 Pro finalization */
 .list-row{grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important}
 .list-row>span:first-child{display:block!important;min-width:0!important}
 .row-title{display:block!important;line-height:1.08!important;margin-bottom:5px!important;white-space:normal!important}
@@ -133,7 +133,7 @@ body.pro-enabled .pro-benefit{background:#EEFDF3}
 <script>
 (function(){ "use strict";
 var DEFAULT_DURATION=900,DEFAULT_TOTAL=3600,DEFAULT_WARNING=300,TURBO_DURATION=9,TURBO_TOTAL=36,TURBO_WARNING=5;
-var STORAGE_KEY="funbots_morning_timer_v24a8_flat";
+var STORAGE_KEY="funbots_morning_timer_v29_stable";
 var config={turbo:false,duration:DEFAULT_DURATION,total:DEFAULT_TOTAL,warning:DEFAULT_WARNING};
 
 var buttons=[].slice.call(document.querySelectorAll(".stage")),taskItems=[].slice.call(document.querySelectorAll(".icon-item"));
@@ -344,6 +344,21 @@ function advanceStageByTimeout(stageIndex){
   }
 }
 function maybeCompleteStage(stageIndex){if(checkedCount(stageIndex)>=3)completeStage(stageIndex)}
+function reopenCompletedStage(stageIndex){
+  if(!state.stageCompleted[stageIndex])return;
+  var restored=state.stageSaved[stageIndex]||0;
+  state.stageSaved[stageIndex]=0;
+  state.stageCompleted[stageIndex]=false;
+  if(state.stages&&state.stages[stageIndex]){
+    state.stages[stageIndex].finished=false;
+    if(restored>0){
+      state.stages[stageIndex].remaining=restored;
+      state.active=stageIndex;
+      state.dismissedExit=false;
+    }
+  }
+  if(stageIndex===3){state.finalStageEndedAt=null;}
+}
 function renderEditor(){if(!taskEditorList)return;var l=state.language,html='<div class="editor-stage"><div class="editor-stage-title">'+tr("templates")+'</div><div class="language-row"><button class="chip" data-template="classic">'+tr("classic")+'</button><button class="chip" data-template="school">'+tr("school")+'</button><button class="chip" data-template="kindergarten">'+tr("kindergarten")+'</button><button class="chip" data-template="fast">'+tr("fast")+'</button></div><button class="editor-button" id="resetIconsButton" type="button">'+tr("resetIcons")+'</button></div>';for(var s=0;s<4;s++){html+='<div class="editor-stage"><div class="editor-stage-title">'+(stageTitles[l]||stageTitles.ru)[s]+'</div>';for(var i=0;i<3;i++){var idx=s*3+i,emoji=state.icons[idx]||defaultTasks[idx].emoji;html+='<div class="task-edit-row"><div class="task-edit-emoji">'+emoji+'</div><div><div class="task-edit-label">'+emojiLabel(emoji)+'</div><div class="row-subtitle">'+tr("autoLabel")+' '+emojiLabel(emoji)+'</div></div><button class="task-edit-button" data-edit-task="'+idx+'">'+tr("change")+'</button></div>'}html+="</div>"}taskEditorList.innerHTML=html;[].slice.call(taskEditorList.querySelectorAll("[data-edit-task]")).forEach(function(btn){btn.addEventListener("click",function(){selectedTaskIndex=Number(btn.getAttribute("data-edit-task"));openEmojiPicker(selectedTaskIndex)})});[].slice.call(taskEditorList.querySelectorAll("[data-template]")).forEach(function(btn){btn.addEventListener("click",function(){var name=btn.getAttribute("data-template");if(templates[name]){state.icons=templates[name].slice();applyIcons();renderEditor();render()}})});var rb=document.getElementById("resetIconsButton");if(rb)rb.addEventListener("click",function(){state.icons=defaultTasks.map(function(t){return t.emoji});applyIcons();renderEditor();render()})}
 function openEmojiPicker(idx){
   selectedTaskIndex=idx;
@@ -408,19 +423,23 @@ function resetAll(){state.screen="main";state.active=null;state.overtimeStartAt=
 function handleTaskClick(item){
   var key=item.getAttribute("data-task-key"),stageIndex=Number(item.getAttribute("data-stage-index"));
   if(!key||isNaN(stageIndex))return;
-  state.tasks[key]=!state.tasks[key];if(state.tasks[key]&&state.morningStartedAt===null){state.morningStartedAt=Date.now();}
-
+  var wasChecked=!!state.tasks[key];
+  state.tasks[key]=!wasChecked;
+  if(state.tasks[key]&&state.morningStartedAt===null){state.morningStartedAt=Date.now();}
+  if(wasChecked && !state.tasks[key] && state.stageCompleted[stageIndex]){
+    reopenCompletedStage(stageIndex);
+    render();
+    return;
+  }
   if(state.tasks[key]&&!state.stageCompleted[stageIndex]){
     state.active=stageIndex;
     state.dismissedExit=false;
   }
-
   if(!state.stageCompleted[stageIndex]){
     maybeCompleteStage(stageIndex);
   }else{
     maybeOpenExitAfterManualCompletion();
   }
-
   maybeOpenExitAfterManualCompletion();
   render();
 }

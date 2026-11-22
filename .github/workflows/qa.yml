@@ -31,6 +31,15 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Run all regression and contract tests
         run: npm test
+      - name: Prepare isolated Cloudflare Pages preview package
+        run: node scripts/build-preview.mjs
+      - name: Upload static preview artifact (not deployed)
+        uses: actions/upload-artifact@v4
+        with:
+          name: morning-face-v29-preview-dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload test report and traces
         if: always()
         uses: actions/upload-artifact@v4

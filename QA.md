@@ -112,3 +112,19 @@ recovery defects FAIL as expected, 1 future v2.9 contract FAIL as expected,
 because stage one remains `finished completed-stage` instead of becoming active.
 This result supersedes the initial 12-test record above; no production fixes were
 made. Machine-readable results are in ignored `test-results/results.json`.
+
+## v2.9 restoration candidate (PR #4)
+
+The restored application is the exact issue #3 ZIP (provenance, inventory and
+upgrade blockers: [restoration report](docs/V29-RESTORATION.md)). Earlier v2.4
+results above remain historical. The `@v29-contract` test now passes normally;
+the three `@known-defect` recovery tests still execute as expected failures.
+Reopening now removes that stage's Bank savings and resumes its timer; tests
+verify recompletion does not duplicate savings. Offline tests use the archive's
+actual v2.9 cache name. The legacy record preservation test documents that old
+state is retained but not migrated. Do not mistake fresh-worker offline coverage
+for old-installation upgrade safety.
+
+Final v2.9 import validation (2026-11-22): **11 PASS, 3 known timer-recovery
+FAIL as expected, 0 unexpected failures, 0 skipped**; full `npm test` exit 0.
+Verified all 34 imported files against original extracted bytes after testing.
