@@ -30,13 +30,16 @@ test('checkboxes complete a stage and accumulate savings once', async ({ page })
   await expect(page.locator('#savingsPill')).toHaveText('🏆 Копилка +30:00');
 });
 
-test('completed-stage checkbox can reopen without duplicate savings', async ({ page }) => {
+test('completed-stage reopening removes savings and recompletes without duplication', async ({ page }) => {
   await complete(page, 0);
   await task(page, 0).click();
   await expect(task(page, 0)).not.toHaveClass(/checked/);
-  await expect(page.locator('.stage').nth(1)).toHaveClass(/active/);
+  await expect(page.locator('.stage').nth(0)).toHaveClass(/active/);
+  await expect(page.locator('#savingsTotal')).not.toHaveClass(/visible/);
+  await page.clock.runFor(1000);
+  await expect(timer(page, 0)).toHaveText('14:59');
   await task(page, 0).click();
-  await expect(page.locator('#savingsPill')).toHaveText('🏆 Копилка +15:00');
+  await expect(page.locator('#savingsPill')).toHaveText('🏆 Копилка +14:59');
 });
 
 test('automatic timeout advances without checking unfinished tasks', async ({ page }) => {
@@ -91,7 +94,7 @@ test('installed PWA reloads offline with cached assets', async ({ page, context 
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
   await page.waitForFunction(() => !!navigator.serviceWorker.controller);
   const assets = await page.evaluate(async () => {
-    const cache = await caches.open('funbots-morning-timer-v24a8-visible-bank-countdown');
+    const cache = await caches.open('funbots-morning-timer-v29-stable');
     return (await cache.keys()).map(r => new URL(r.url).pathname);
   });
   expect(assets).toContain('/index.html');
@@ -137,14 +140,27 @@ test('reload recovers time elapsed since saved snapshot @known-defect', async ({
   await expect(timer(page, 0)).toHaveText('13:55', { timeout: 1000 });
 });
 
-// Future contract from issue #1, not a claim about the unavailable v2.9 ZIP.
+// Confirmed against the exact user-supplied v2.9 Stable artifact.
 test('unchecking a completed stage resumes its timer @v29-contract', async ({ page }) => {
   await complete(page, 0);
   await expect(page.locator('.stage').nth(1)).toHaveClass(/active/);
   await task(page, 0).click();
   await expect(task(page, 0)).not.toHaveClass(/checked/);
-  test.fail(true, 'v2.9-only contract: current app leaves the next stage active');
   await expect(page.locator('.stage').nth(0)).toHaveClass(/active/, { timeout: 1000 });
   await page.clock.runFor(1000);
   await expect(timer(page, 0)).toHaveText('14:59');
+});
+
+test('v2.9 leaves the legacy record intact but does not migrate it', async ({ page }) => {
+  const legacyKey = 'funbots_morning_timer_v24a8_flat';
+  const legacy = JSON.stringify({ language: 'he', tasks: { 'task-0': true } });
+  await page.evaluate(({ legacyKey, legacy }) => {
+    localStorage.clear();
+    localStorage.setItem(legacyKey, legacy);
+  }, { legacyKey, legacy });
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
+  await expect(task(page, 0)).not.toHaveClass(/checked/);
+  expect(await page.evaluate(key => localStorage.getItem(key), legacyKey)).toBe(legacy);
+  expect(await page.evaluate(() => !!localStorage.getItem('funbots_morning_timer_v29_stable'))).toBe(true);
 });
