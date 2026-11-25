@@ -13,7 +13,8 @@ async function enableTurbo(page) {
   await expect(timer(page, 0)).toHaveText('00:09');
 }
 test.beforeEach(async ({ page }) => {
-  await page.clock.install({ time: new Date('2026-11-01T08:00:00Z') });
+  await page.clock.install({ time: new Date('2026-11-01T07:59:00Z') });
+  await page.clock.pauseAt(new Date('2026-11-01T08:00:00Z'));
   await page.goto('/');
 });
 
@@ -90,7 +91,8 @@ test('reload preserves checkbox and current timer snapshot', async ({ page }) =>
   await expect(timer(page, 0)).toHaveText('14:55');
 });
 
-test('installed PWA reloads offline with cached assets', async ({ page, context }) => {
+test('installed PWA reloads offline with cached assets', async ({ page, context, browserName }) => {
+  test.skip(browserName === 'webkit', 'WebKit offline is covered using a disconnected origin in pwa-update.spec.js');
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
   await page.reload();
   await page.waitForFunction(() => !!navigator.serviceWorker.controller);

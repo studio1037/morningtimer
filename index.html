@@ -291,7 +291,7 @@ function load(){
     defaultTasks.forEach(function(task,i){
       var key="task-"+i;
       if(p.tasks&&p.tasks[key]===true)state.tasks[key]=true;
-      if(Array.isArray(p.icons)&&Object.prototype.hasOwnProperty.call(emojiLabels,p.icons[i])){
+      if(Array.isArray(p.icons)&&typeof p.icons[i]==="string"&&Object.prototype.hasOwnProperty.call(emojiLabels,p.icons[i])){
         state.icons[i]=p.icons[i];
       }
     });

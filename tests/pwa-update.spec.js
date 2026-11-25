@@ -12,7 +12,12 @@ test('interrupted update, open-tab refresh, offline activation and rollback pres
   const baseApp = execFileSync('git', ['show', base + ':index.html'], { encoding: 'utf8' });
   let release = 'baseline';
   let interrupted = false;
+  let disconnected = false;
   const server = createServer(async (req, res) => {
+    if (disconnected) {
+      req.socket.destroy();
+      return;
+    }
     const path = new URL(req.url, 'http://localhost').pathname;
     try {
       if (interrupted && path === '/icon-192.png') {
@@ -71,13 +76,13 @@ test('interrupted update, open-tab refresh, offline activation and rollback pres
     await candidate.goto(url);
     await expect(version(candidate)).toHaveAttribute('content', 'candidate');
     await candidate.waitForFunction(() => !!navigator.serviceWorker.controller);
-    await context.setOffline(true);
+    disconnected = true;
     await candidate.reload();
     await expect(version(candidate)).toHaveAttribute('content', 'candidate');
     await expect(candidate.locator('.icon-item').first()).toHaveClass(/checked/);
     expect(await candidate.evaluate(() => caches.has('unrelated-app-cache'))).toBe(true);
 
-    await context.setOffline(false);
+    disconnected = false;
     release = 'rollback';
     await update(candidate);
     await candidate.waitForFunction(async () => !!(await navigator.serviceWorker.ready).waiting);
@@ -89,7 +94,6 @@ test('interrupted update, open-tab refresh, offline activation and rollback pres
     expect(await rollback.evaluate(() => caches.has('unrelated-app-cache'))).toBe(true);
     await rollback.close();
   } finally {
-    await context.setOffline(false);
     server.closeAllConnections();
     await new Promise(resolve => server.close(resolve));
   }
