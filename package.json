@@ -4,8 +4,8 @@
   "scripts": {
     "dev": "python3 -m http.server 4173 --bind 127.0.0.1",
     "test": "playwright test",
-    "test:baseline": "playwright test --grep-invert \"@known-defect|@v29-contract\"",
-    "test:defects": "playwright test --grep @known-defect",
+    "test:baseline": "playwright test --grep-invert \"@recovery|@v29-contract\"",
+    "test:defects": "playwright test --grep @recovery",
     "test:report": "playwright show-report",
     "test:contracts": "playwright test --grep @v29-contract"
   },
