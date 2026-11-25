@@ -13,7 +13,8 @@ async function enableTurbo(page) {
   await expect(timer(page, 0)).toHaveText('00:09');
 }
 test.beforeEach(async ({ page }) => {
-  await page.clock.install({ time: new Date('2026-11-01T08:00:00Z') });
+  await page.clock.install({ time: new Date('2026-11-01T07:59:00Z') });
+  await page.clock.pauseAt(new Date('2026-11-01T08:00:00Z'));
   await page.goto('/');
 });
 
@@ -90,11 +91,13 @@ test('reload preserves checkbox and current timer snapshot', async ({ page }) =>
   await expect(timer(page, 0)).toHaveText('14:55');
 });
 
-test('installed PWA reloads offline with cached assets', async ({ page, context }) => {
+test('installed PWA reloads offline with cached assets', async ({ page, context, browserName }) => {
+  test.skip(browserName === 'webkit', 'WebKit offline is covered using a disconnected origin in pwa-update.spec.js');
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
+  await page.reload();
   await page.waitForFunction(() => !!navigator.serviceWorker.controller);
   const assets = await page.evaluate(async () => {
-    const cache = await caches.open('funbots-morning-timer-v29-stable');
+    const cache = await caches.open('funbots-morning-timer:' + location.origin + '/:v2.9.1');
     return (await cache.keys()).map(r => new URL(r.url).pathname);
   });
   expect(assets).toContain('/index.html');
@@ -111,32 +114,27 @@ test('installed PWA reloads offline with cached assets', async ({ page, context 
   expect(image).toEqual({ ok: true, type: 'image/png' });
 });
 
-// Expected failures assert desired recovery, not the current defective output.
-// Playwright reports unexpected passes as failures, so fixes require review.
-test('suspension consumes elapsed time across stages @known-defect', async ({ page }) => {
+test('suspension consumes elapsed time across stages @recovery', async ({ page }) => {
   await enableTurbo(page);
   await task(page, 0).click();
   await page.clock.fastForward(20000);
-  test.fail(true, 'sync() discards elapsed overflow after one stage');
   await expect(timer(page, 1)).toHaveText('00:00', { timeout: 1000 });
   await expect(timer(page, 2)).toHaveText('00:07');
 });
 
-test('visibility resume accounts for suspended time @known-defect', async ({ page }) => {
+test('visibility resume accounts for suspended time @recovery', async ({ page }) => {
   await task(page, 0).click();
   await page.clock.setSystemTime(new Date('2026-11-01T08:01:00Z'));
   // Deterministic lifecycle-handler regression; not a real OS suspension.
   await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
-  test.fail(true, 'visibilitychange resets lastTime before syncing');
   await expect(timer(page, 0)).toHaveText('14:00', { timeout: 1000 });
 });
 
-test('reload recovers time elapsed since saved snapshot @known-defect', async ({ page }) => {
+test('reload recovers time elapsed since saved snapshot @recovery', async ({ page }) => {
   await task(page, 0).click();
   await page.clock.runFor(5000);
   await page.clock.setSystemTime(new Date('2026-11-01T08:01:05Z'));
   await page.reload();
-  test.fail(true, 'load() restores remaining time without elapsed recovery');
   await expect(timer(page, 0)).toHaveText('13:55', { timeout: 1000 });
 });
 
@@ -151,16 +149,60 @@ test('unchecking a completed stage resumes its timer @v29-contract', async ({ pa
   await expect(timer(page, 0)).toHaveText('14:59');
 });
 
-test('v2.9 leaves the legacy record intact but does not migrate it', async ({ page }) => {
-  const legacyKey = 'funbots_morning_timer_v24a8_flat';
-  const legacy = JSON.stringify({ language: 'he', tasks: { 'task-0': true } });
-  await page.evaluate(({ legacyKey, legacy }) => {
-    localStorage.clear();
-    localStorage.setItem(legacyKey, legacy);
-  }, { legacyKey, legacy });
-  await page.reload();
-  await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
-  await expect(task(page, 0)).not.toHaveClass(/checked/);
-  expect(await page.evaluate(key => localStorage.getItem(key), legacyKey)).toBe(legacy);
-  expect(await page.evaluate(() => !!localStorage.getItem('funbots_morning_timer_v29_stable'))).toBe(true);
+const stateKey = 'funbots_morning_timer_v29_stable';
+const legacyKey = 'funbots_morning_timer_v24a8_flat';
+
+for (const [name, legacy, language, checked, time] of [
+  ['valid', { language: 'he', tasks: { 'task-0': true }, active: 0, stages: [{ remaining: 600 }] }, 'he', true, '10:00'],
+  ['partial', { language: 'en', tasks: { 'task-0': 42 }, stages: [null], active: 99 }, 'en', false, '15:00'],
+  ['corrupt', '{broken', 'ru', false, '15:00'],
+]) {
+  test(`legacy migration handles ${name} state and preserves the source`, async ({ page }) => {
+    const raw = typeof legacy === 'string' ? legacy : JSON.stringify(legacy);
+    await page.addInitScript(({ stateKey, legacyKey, raw }) => {
+      if (sessionStorage.getItem("migration-fixture")) return;
+      sessionStorage.setItem("migration-fixture", "seeded");
+      localStorage.removeItem(stateKey);
+      localStorage.setItem(legacyKey, raw);
+    }, { stateKey, legacyKey, raw });
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('lang', language);
+    await expect(timer(page, 0)).toHaveText(time);
+    expect(await task(page, 0).evaluate(el => el.classList.contains('checked'))).toBe(checked);
+    expect(await page.evaluate(key => localStorage.getItem(key), legacyKey)).toBe(raw);
+    expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)).stateVersion, stateKey)).toBe(1);
+    await page.evaluate(key => {
+      localStorage.setItem(key, JSON.stringify({ language: 'ru', tasks: {} }));
+    }, legacyKey);
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('lang', language);
+    expect(await task(page, 0).evaluate(el => el.classList.contains('checked'))).toBe(checked);
+  });
+}
+
+test('clock rollback does not recredit time and counting resumes immediately @recovery', async ({ page }) => {
+  await task(page, 0).click();
+  await page.clock.runFor(5000);
+  await expect(timer(page, 0)).toHaveText('14:55');
+  await page.clock.setSystemTime(new Date('2026-11-01T07:55:00Z'));
+  await page.evaluate(() => window.dispatchEvent(new Event('pageshow')));
+  await expect(timer(page, 0)).toHaveText('14:55');
+  await page.clock.runFor(2000);
+  await expect(timer(page, 0)).toHaveText('14:53');
+});
+
+test('final timeout during suspension includes the overflow in Bank and Late @recovery', async ({ page }) => {
+  await enableTurbo(page);
+  await complete(page, 0);
+  await complete(page, 1);
+  await complete(page, 2);
+  await page.clock.fastForward(40000);
+  const snapshot = () => page.evaluate(key => JSON.parse(localStorage.getItem(key)), stateKey);
+  const before = await snapshot();
+  const bank = before.stageSaved.reduce((total, value) => total + value, 0);
+  const late = (before.syncedAt - before.finalStageEndedAt) / 1000 - bank;
+  expect(late).toBeGreaterThanOrEqual(4);
+  expect(late).toBeLessThan(5);
+  await page.evaluate(() => window.dispatchEvent(new Event('pageshow')));
+  expect((await snapshot()).finalStageEndedAt).toBe(before.finalStageEndedAt);
 });

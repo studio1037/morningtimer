@@ -250,19 +250,63 @@ function lateElapsed(){
   return Math.max(0,elapsed-(config.total+bank));
 }
 
-function ensureFinalStageCountdownStarted(){
-  if(
-    state.finalStageEndedAt===null &&
-    state.stages &&
-    state.stages[3] &&
-    state.stages[3].remaining<=0 &&
-    !allTasksChecked()
-  ){
-    state.finalStageEndedAt=Date.now();
-  }
+var LEGACY_STORAGE_KEY="funbots_morning_timer_v24a8_flat";
+var STATE_VERSION=1;
+var timeFields=["overtimeStartAt","morningStartedAt","lateStartedAt","finalStageEndedAt"];
+function boundedDuration(value,fallback){
+  return Number.isFinite(value)?Math.max(0,Math.min(config.duration,value)):fallback;
 }
-function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(Object.assign({},state,{turbo:config.turbo})))}catch(e){}}
-function load(){try{var raw=localStorage.getItem(STORAGE_KEY);if(!raw)return;var p=JSON.parse(raw);if(!p)return;if(typeof p.turbo==="boolean"){config.turbo=p.turbo;applyConfig()}state.screen=p.screen||"main";state.active=typeof p.active==="number"?p.active:null;state.overtimeStartAt=typeof p.overtimeStartAt==="number"?p.overtimeStartAt:null;state.dismissedExit=!!p.dismissedExit;state.morningStartedAt=typeof p.morningStartedAt==="number"?p.morningStartedAt:null;state.lateStartedAt=typeof p.lateStartedAt==="number"?p.lateStartedAt:null;state.finalStageEndedAt=typeof p.finalStageEndedAt==="number"?p.finalStageEndedAt:null;state.proEnabled=!!p.proEnabled;state.language=p.language||"ru";state.tasks=p.tasks||{};state.stageCompleted=Array.isArray(p.stageCompleted)?p.stageCompleted:[false,false,false,false];state.stageSaved=Array.isArray(p.stageSaved)?p.stageSaved:[0,0,0,0];state.icons=Array.isArray(p.icons)&&p.icons.length===12?p.icons:defaultTasks.map(function(t){return t.emoji});if(Array.isArray(p.stages)&&p.stages.length===4){p.stages.forEach(function(it,i){state.stages[i].remaining=typeof it.remaining==="number"?Math.max(0,Math.min(config.duration,it.remaining)):config.duration;state.stages[i].finished=!!it.finished})}}catch(e){}}
+function snapshotTime(value){
+  return Number.isFinite(value)&&value>=0?value:null;
+}
+function save(){
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(Object.assign({},state,{
+      turbo:config.turbo,stateVersion:STATE_VERSION,syncedAt:lastTime
+    })));
+  }catch(e){}
+}
+function load(){
+  try{
+    var raw=localStorage.getItem(STORAGE_KEY);
+    var legacy=raw===null;
+    if(legacy)raw=localStorage.getItem(LEGACY_STORAGE_KEY);
+    if(raw===null)return;
+    var p;
+    try{p=JSON.parse(raw)}catch(e){}
+    if(!p||typeof p!=="object"||Array.isArray(p)){
+      if(!legacy&&localStorage.getItem(STORAGE_KEY+"_invalid_backup")===null){
+        localStorage.setItem(STORAGE_KEY+"_invalid_backup",raw);
+      }
+      return;
+    }
+    config.turbo=p.turbo===true;
+    applyConfig();
+    if(["main","exit","result","settings","pro","install","editor","emoji"].indexOf(p.screen)>=0)state.screen=p.screen;
+    if(Number.isInteger(p.active)&&p.active>=0&&p.active<state.stages.length)state.active=p.active;
+    state.dismissedExit=p.dismissedExit===true;
+    state.proEnabled=p.proEnabled===true;
+    if(["ru","en","he"].indexOf(p.language)>=0)state.language=p.language;
+    timeFields.forEach(function(key){state[key]=snapshotTime(p[key])});
+    defaultTasks.forEach(function(task,i){
+      var key="task-"+i;
+      if(p.tasks&&p.tasks[key]===true)state.tasks[key]=true;
+      if(Array.isArray(p.icons)&&typeof p.icons[i]==="string"&&Object.prototype.hasOwnProperty.call(emojiLabels,p.icons[i])){
+        state.icons[i]=p.icons[i];
+      }
+    });
+    state.stages.forEach(function(stage,i){
+      var stored=Array.isArray(p.stages)&&p.stages[i];
+      stage.remaining=boundedDuration(stored&&stored.remaining,config.duration);
+      state.stageCompleted[i]=Array.isArray(p.stageCompleted)&&p.stageCompleted[i]===true;
+      stage.finished=state.stageCompleted[i]||!!(stored&&stored.finished===true);
+      if(state.stageCompleted[i]&&Array.isArray(p.stageSaved)){
+        state.stageSaved[i]=boundedDuration(p.stageSaved[i],0);
+      }
+    });
+    if(!legacy&&p.stateVersion===STATE_VERSION&&snapshotTime(p.syncedAt)!==null)lastTime=p.syncedAt;
+  }catch(e){}
+}
 function applyText(){var l=state.language;document.documentElement.lang=l;document.documentElement.dir=l==="he"?"rtl":"ltr";document.querySelectorAll("[data-i]").forEach(function(el){var key=el.getAttribute("data-i");if(tr(key))el.innerHTML=tr(key)});taskItems.forEach(function(item,i){var label=item.querySelector(".icon-label");if(label)label.textContent=emojiLabel(state.icons[i]||defaultTasks[i].emoji)})}
 function applyIcons(){taskItems.forEach(function(item,i){var icon=item.querySelector(".icon");if(icon)icon.textContent=state.icons[i]||defaultTasks[i].emoji})}
 function updateProUI(){
@@ -280,16 +324,34 @@ function setScreen(name){state.screen=name;[["exit",exitScreen],["result",result
 
 var lastTime=Date.now();
 function sync(){
-  var now=Date.now(),delta=(now-lastTime)/1000;
+  var now=Date.now(),elapsed=now-lastTime;
+  if(elapsed<0){
+    timeFields.forEach(function(key){
+      if(state[key]!==null)state[key]=Math.max(0,state[key]+elapsed);
+    });
+    elapsed=0;
+  }
   lastTime=now;
-  if(delta>0&&state.active!==null&&state.screen!=="result"){
+  while(state.active!==null&&state.screen!=="result"){
     var activeIndex=state.active;
-    var it=state.stages[activeIndex];
-    it.remaining=Math.max(0,it.remaining-delta);
-    if(it.remaining<=0){
-      it.remaining=0;
-      advanceStageByTimeout(activeIndex);
+    var stage=state.stages[activeIndex];
+    if(state.stageCompleted[activeIndex]){
+      state.active=activeIndex<3?activeIndex+1:null;
+      continue;
     }
+    var stageMs=stage.remaining*1000;
+    if(elapsed<stageMs){
+      stage.remaining=(stageMs-elapsed)/1000;
+      break;
+    }
+    elapsed-=stageMs;
+    advanceStageByTimeout(activeIndex);
+    if(activeIndex===3&&state.finalStageEndedAt===null&&!allTasksChecked()){
+      state.finalStageEndedAt=now-elapsed;
+    }
+  }
+  if(state.finalStageEndedAt===null&&state.stages[3].remaining<=0&&!allTasksChecked()){
+    state.finalStageEndedAt=now;
   }
   if(state.screen==="main"&&allTasksChecked()&&!state.dismissedExit)openExit(false);
 }
@@ -396,7 +458,7 @@ function openEmojiPicker(idx){
   setScreen("emoji");
   render();
 }
-function render(){sync();ensureFinalStageCountdownStarted();applyText();applyIcons();updateProUI();buttons.forEach(function(b,i){var it=state.stages[i],timer=b.querySelector("[data-timer]"),progress=Math.max(0,Math.min(100,Math.round((it.remaining/config.duration)*100)));if(timer)timer.textContent=format(it.remaining);b.style.setProperty("--progress",progress+"%");b.classList.toggle("warning",it.remaining>0&&it.remaining<=config.warning&&!it.finished);b.classList.toggle("finished",it.finished||it.remaining<=0);b.classList.toggle("active",state.active===i);b.classList.toggle("completed-stage",!!state.stageCompleted[i]);var badge=b.querySelector("[data-saved-badge]");if(badge){if(state.stageCompleted[i]&&state.stageSaved[i]>0){badge.textContent="🏆 +"+format(state.stageSaved[i]);badge.classList.add("visible")}else{badge.textContent="";badge.classList.remove("visible")}}});taskItems.forEach(function(item){var key=item.getAttribute("data-task-key");if(key)item.classList.toggle("checked",!!state.tasks[key])});if(state.screen==="exit"){
+function render(){sync();applyText();applyIcons();updateProUI();buttons.forEach(function(b,i){var it=state.stages[i],timer=b.querySelector("[data-timer]"),progress=Math.max(0,Math.min(100,Math.round((it.remaining/config.duration)*100)));if(timer)timer.textContent=format(it.remaining);b.style.setProperty("--progress",progress+"%");b.classList.toggle("warning",it.remaining>0&&it.remaining<=config.warning&&!it.finished);b.classList.toggle("finished",it.finished||it.remaining<=0);b.classList.toggle("active",state.active===i);b.classList.toggle("completed-stage",!!state.stageCompleted[i]);var badge=b.querySelector("[data-saved-badge]");if(badge){if(state.stageCompleted[i]&&state.stageSaved[i]>0){badge.textContent="🏆 +"+format(state.stageSaved[i]);badge.classList.add("visible")}else{badge.textContent="";badge.classList.remove("visible")}}});taskItems.forEach(function(item){var key=item.getAttribute("data-task-key");if(key)item.classList.toggle("checked",!!state.tasks[key])});if(state.screen==="exit"){
   var ebank=visibleBankAmount();
   var elate=lateElapsed();
   if(elate<=0){
@@ -423,6 +485,7 @@ function resetAll(){state.screen="main";state.active=null;state.overtimeStartAt=
 function handleTaskClick(item){
   var key=item.getAttribute("data-task-key"),stageIndex=Number(item.getAttribute("data-stage-index"));
   if(!key||isNaN(stageIndex))return;
+  sync();
   var wasChecked=!!state.tasks[key];
   state.tasks[key]=!wasChecked;
   if(state.tasks[key]&&state.morningStartedAt===null){state.morningStartedAt=Date.now();}
@@ -448,8 +511,8 @@ if(resetButton)resetButton.addEventListener("click",function(){var code=prompt(t
 if(settingsButton)settingsButton.addEventListener("click",function(){setScreen("settings");render()});if(settingsClose)settingsClose.addEventListener("click",function(){setScreen("main");render()});if(taskEditorButton)taskEditorButton.addEventListener("click",function(){renderEditor();setScreen("editor");render()});if(taskEditorClose)taskEditorClose.addEventListener("click",function(){setScreen("settings");render()});if(emojiPickerClose)emojiPickerClose.addEventListener("click",function(){setScreen("editor");render()});
 if(proClose)proClose.addEventListener("click",function(){setScreen("settings");render()});if(promoButton)promoButton.addEventListener("click",function(){setScreen("settings");render();setTimeout(function(){var el=document.getElementById("proSettingsAnchor");if(el)el.scrollIntoView({behavior:"smooth",block:"start"});},50)});if(resultProButton)resultProButton.addEventListener("click",function(){setScreen("pro");render()});if(backButton)backButton.addEventListener("click",function(){state.dismissedExit=true;setScreen("main");render()});if(leaveButton)leaveButton.addEventListener("click",showResult);if(resultBackButton)resultBackButton.addEventListener("click",function(){state.dismissedExit=true;setScreen("main");render()});if(lockLearn)lockLearn.addEventListener("click",function(){if(lockModal)lockModal.classList.remove("visible");setScreen("pro");render()});if(lockLater)lockLater.addEventListener("click",function(){if(lockModal)lockModal.classList.remove("visible")});if(interestButton)interestButton.addEventListener("click",function(){alert(tr("interestThanks"))});if(installHelpButton)installHelpButton.addEventListener("click",function(){setScreen("install");render()});if(installClose)installClose.addEventListener("click",function(){setScreen("settings");render()});if(shareButton)shareButton.addEventListener("click",function(){var txt=tr("shareText"),url=location.href.split("?")[0];if(navigator.share)navigator.share({title:"Morning Timer",text:txt,url:url}).catch(function(){});else alert(txt)});
 lockedButtons.forEach(function(btn){btn.addEventListener("click",function(){if(state.proEnabled){if(lockText)lockText.textContent=(btn.getAttribute("data-feature")||"Pro")+" — Pro включён. Настройка будет активирована в следующем функциональном слое.";if(lockModal)lockModal.classList.add("visible");return}if(lockText)lockText.textContent=tr("lockedText").replace("{feature}",btn.getAttribute("data-feature")||"Pro");if(lockModal)lockModal.classList.add("visible")})});langButtons.forEach(function(btn){btn.addEventListener("click",function(){state.language=btn.getAttribute("data-lang")||"ru";alert(tr("langSaved"));render();if(state.screen==="editor")renderEditor()})});
-document.addEventListener("visibilitychange",function(){lastTime=Date.now();render()});window.addEventListener("pageshow",function(){lastTime=Date.now();render()});if("serviceWorker" in navigator)window.addEventListener("load",function(){navigator.serviceWorker.register("./service-worker.js").catch(function(){})});
-applyConfig();load();setScreen(state.screen||"main");lastTime=Date.now();render();setInterval(render,250);
+document.addEventListener("visibilitychange",render);window.addEventListener("pageshow",render);window.addEventListener("pagehide",function(){sync();save()});if("serviceWorker" in navigator)window.addEventListener("load",function(){navigator.serviceWorker.register("./service-worker.js").catch(function(){})});
+applyConfig();load();setScreen(state.screen||"main");render();setInterval(render,250);
 })();
 </script>
 </body></html>
